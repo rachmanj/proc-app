@@ -54,11 +54,17 @@
                                 @if ($permissions)
                                     <div class="form-group">
                                         <label for="permissions">Permissions</label>
-                                        <select name="permissions[]" id="permissions" class="form-control" multiple>
+                                        <div id="permissions">
                                             @foreach ($permissions as $permission)
-                                                <option value="{{ $permission->id }}">{{ $permission->name }}</option>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="permissions[]"
+                                                        value="{{ $permission->id }}" id="permission{{ $permission->id }}">
+                                                    <label class="form-check-label" for="permission{{ $permission->id }}">
+                                                        {{ $permission->name }}
+                                                    </label>
+                                                </div>
                                             @endforeach
-                                        </select>
+                                        </div>
                                     </div>
                                 @endif
                             </div>

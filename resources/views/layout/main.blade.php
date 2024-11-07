@@ -7,7 +7,7 @@
     <div class="wrapper">
 
         @include('layout.partials.navbar')
-        {{-- @include('sweetalert::alert') --}}
+        @include('sweetalert::alert')
 
         <!-- Content Wrapper. Contains page content -->
         <div class="content-wrapper">

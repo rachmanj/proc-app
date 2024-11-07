@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Yajra\DataTables\Facades\DataTables;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class PermissionController extends Controller
 {
@@ -43,7 +44,9 @@ class PermissionController extends Controller
         $permission = Permission::findOrFail($id);
         $permission->update($request->only('name'));
 
-        return redirect()->route('admin.permissions.index')->with('success', 'Permission updated successfully');
+        Alert::success('Success', 'Permission updated successfully');
+
+        return redirect()->route('admin.permissions.index');
     }
 
     public function destroy($id)
@@ -51,7 +54,9 @@ class PermissionController extends Controller
         $permission = Permission::findOrFail($id);
         $permission->delete();
 
-        return redirect()->route('admin.permissions.index')->with('success', 'Permission deleted successfully');
+        Alert::success('Success', 'Permission deleted successfully');
+
+        return redirect()->route('admin.permissions.index');
     }
 
     public function store(Request $request)
@@ -63,6 +68,8 @@ class PermissionController extends Controller
 
         Permission::create($request->only('name', 'guard_name'));
 
-        return response()->json(['success' => 'Permission created successfully']);
+        Alert::success('Success', 'Permission created successfully');
+
+        return redirect()->route('admin.permissions.index');
     }
 }
