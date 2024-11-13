@@ -16,27 +16,17 @@
             <!-- Left navbar links -->
             <ul class="navbar-nav">
                 <li class="nav-item">
-
-
-
-
                     <a href="#" class="nav-link">Dashboard</a>
-
                 </li>
-
-
-
-
-
-
 
 
 
 
                 <a href="#" class="nav-link">Search</a>
 
-                @include('layout.partials.menu.admin')
-
+                @can('akses_admin')
+                    @include('layout.partials.menu.admin')
+                @endcan
 
             </ul>
         </div>

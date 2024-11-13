@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::prefix('users')->name('users.')->group(function () {
@@ -13,6 +13,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('roles-update/{id}', [UserController::class, 'roles_user_update'])->name('roles_user_update');
         Route::get('change-password/{id}', [UserController::class, 'change_password'])->name('change_password');
         Route::put('password-update/{id}', [UserController::class, 'password_update'])->name('password_update');
+        Route::resource('/', UserController::class)->parameters(['' => 'user']);
     });
 
     // ROLES
