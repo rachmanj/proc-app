@@ -4,7 +4,7 @@
         <a href="/"class="navbar-brand">
             <img src="{{ asset('adminlte/dist/img/AdminLTELogo.png') }}" alt="AdminLTE Logo"
                 class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text text-white font-weight-light"><strong>MOCA</strong> System</span>
+            <span class="brand-text text-white font-weight-light"><strong>PROC</strong> App</span>
         </a>
 
         <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse"
@@ -19,10 +19,11 @@
                     <a href="#" class="nav-link">Dashboard</a>
                 </li>
 
+                {{-- <a href="#" class="nav-link">Search</a> --}}
 
-
-
-                <a href="#" class="nav-link">Search</a>
+                @can('akses_procurement')
+                    @include('layout.partials.menu.procurement')
+                @endcan
 
                 @can('akses_admin')
                     @include('layout.partials.menu.admin')
