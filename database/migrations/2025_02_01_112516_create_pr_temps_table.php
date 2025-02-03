@@ -13,6 +13,28 @@ return new class extends Migration
     {
         Schema::create('pr_temps', function (Blueprint $table) {
             $table->id();
+            $table->string('pr_draft_no', 30)->nullable();
+            $table->string('pr_no', 30)->nullable();
+            $table->date('pr_date')->nullable();
+            $table->date('generated_date')->nullable();
+            $table->string('priority', 30)->nullable();
+            $table->string('pr_status', 30)->nullable();
+            $table->string('closed_status', 30)->nullable();
+            $table->string('pr_rev_no', 30)->nullable();
+            $table->string('pr_type')->nullable();
+            $table->string('project_code', 30)->nullable();
+            $table->string('dept_name')->nullable();
+            $table->string('for_unit')->nullable();
+            $table->integer('hours_meter')->nullable();
+            $table->date('required_date')->nullable();
+            $table->string('requestor')->nullable();
+            $table->string('item_code')->nullable();
+            $table->string('item_name')->nullable();
+            $table->integer('Quantity')->nullable();
+            $table->string('uom', 30)->nullable();
+            $table->integer('open_qty')->nullable();
+            $table->text('line_remarks')->nullable();
+            $table->text('remarks')->nullable();
             $table->timestamps();
         });
     }

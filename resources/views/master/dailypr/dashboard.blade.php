@@ -1,0 +1,184 @@
+@extends('layout.main')
+
+@section('title_page')
+    Daily PR
+@endsection
+
+@section('breadcrumb_title')
+    <small>
+        master / daily pr / dashboard
+    </small>
+@endsection
+
+@section('styles')
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+@endsection
+
+@section('content')
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-8">
+                        <h4>Purchase Requisition List</h4>
+                    </div>
+                    <div class="col-4 text-right">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#importModal">
+                            <i class="fas fa-file-import mr-2"></i>Import
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="prTable" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>PR No</th>
+                            <th>PR Date</th>
+                            <th>Project</th>
+                            <th>Department</th>
+                            <th>Item Name</th>
+                            <th>Qty</th>
+                            <th>UOM</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">Import PR Data</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="importForm" method="POST" action="{{ route('master.dailypr.import') }}"
+                    enctype="multipart/form-data" onsubmit="return false;">
+                    <div class="modal-body">
+                        @csrf
+                        <div class="form-group">
+                            <label for="file">Choose Excel File</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx, .xls"
+                                required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="submitBtn">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#prTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('master.dailypr.data') }}",
+                columns: [{
+                        data: 'pr_no',
+                        name: 'pr_no'
+                    },
+                    {
+                        data: 'pr_date',
+                        name: 'pr_date'
+                    },
+                    {
+                        data: 'project_code',
+                        name: 'project_code'
+                    },
+                    {
+                        data: 'dept_name',
+                        name: 'dept_name'
+                    },
+                    {
+                        data: 'item_name',
+                        name: 'item_name'
+                    },
+                    {
+                        data: 'Quantity',
+                        name: 'Quantity'
+                    },
+                    {
+                        data: 'uom',
+                        name: 'uom'
+                    },
+                    {
+                        data: 'pr_status',
+                        name: 'pr_status'
+                    }
+                ]
+            });
+
+            // Handle Import
+            $('#submitBtn').on('click', function(e) {
+                e.preventDefault();
+
+                var form = $('#importForm')[0];
+                var formData = new FormData(form);
+
+                Swal.fire({
+                    title: 'Importing...',
+                    text: 'Please wait while we import your data.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: form.action,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#importModal').modal('hide');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: `Successfully imported ${response.rowCount} rows of data.`,
+                                showConfirmButton: true
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    table.ajax.reload();
+                                }
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: xhr.responseJSON ? xhr.responseJSON.message :
+                                'An error occurred while importing the data.',
+                            showConfirmButton: true
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+@endsection
