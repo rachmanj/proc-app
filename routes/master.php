@@ -24,5 +24,6 @@ Route::prefix('master')->name('master.')->group(function () {
         Route::get('/', [DailyPRController::class, 'index'])->name('index');
         Route::post('import', [DailyPRController::class, 'import'])->name('import');
         Route::get('data', [DailyPRController::class, 'data'])->name('data');
+        Route::post('import-to-pr', [DailyPRController::class, 'importToPRTable'])->name('import-to-pr');
     });
 });

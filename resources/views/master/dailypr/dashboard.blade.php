@@ -21,11 +21,15 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-8">
-                        <h4>Purchase Requisition List</h4>
+                        <h4>PR Temporary Data</h4>
                     </div>
                     <div class="col-4 text-right">
-                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#importModal">
+                        <button type="button" class="btn btn-sm btn-primary mr-2" data-toggle="modal"
+                            data-target="#importModal">
                             <i class="fas fa-file-import mr-2"></i>Import
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" id="importToPRBtn">
+                            <i class="fas fa-file-import mr-2"></i>Import to PR Table
                         </button>
                     </div>
                 </div>
@@ -86,6 +90,13 @@
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script>
         $(document).ready(function() {
+            // Set up CSRF token for all AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
             // Initialize DataTable
             var table = $('#prTable').DataTable({
                 processing: true,
@@ -150,9 +161,6 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
                     success: function(response) {
                         if (response.success) {
                             $('#importModal').modal('hide');
@@ -175,6 +183,61 @@
                             text: xhr.responseJSON ? xhr.responseJSON.message :
                                 'An error occurred while importing the data.',
                             showConfirmButton: true
+                        });
+                    }
+                });
+            });
+
+            // Handle Import to PR Table
+            $('#importToPRBtn').on('click', function() {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "This will import the temporary data to the PR table.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, import it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Importing...',
+                            text: 'Please wait while we process your request.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        $.ajax({
+                            url: "{{ route('master.dailypr.import-to-pr') }}",
+                            type: 'POST',
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success!',
+                                        text: response.message,
+                                        showConfirmButton: true
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            table.ajax.reload();
+                                        }
+                                    });
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: xhr.responseJSON ? xhr.responseJSON
+                                        .message :
+                                        'An error occurred while importing the data.',
+                                    showConfirmButton: true
+                                });
+                            }
                         });
                     }
                 });

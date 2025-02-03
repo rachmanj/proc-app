@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('requestor')->nullable();
             $table->string('item_code')->nullable();
             $table->string('item_name')->nullable();
-            $table->integer('Quantity')->nullable();
+            $table->integer('quantity')->nullable();
             $table->string('uom', 30)->nullable();
             $table->integer('open_qty')->nullable();
             $table->text('line_remarks')->nullable();

@@ -3,6 +3,10 @@
 <html lang="en">
 @include('layout.partials.head')
 
+<head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+
 <body class="hold-transition layout-top-nav layout-navbar-fixed">
     <div class="wrapper">
 
