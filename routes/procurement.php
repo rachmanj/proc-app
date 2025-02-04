@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Procurement\POController;
+use App\Http\Controllers\Procurement\PRController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('procurement')->name('procurement.')->group(function () {
@@ -16,5 +17,15 @@ Route::prefix('procurement')->name('procurement.')->group(function () {
         Route::delete('/detach-file/{attachmentId}', [POController::class, 'detachFile'])->name('detach-file');
         Route::get('/{purchaseOrder}', [POController::class, 'show'])->name('show');
         Route::delete('/{purchaseOrder}', [POController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('pr')->name('pr.')->group(function () {
+        Route::get('/', [PRController::class, 'index'])->name('index');
+        Route::get('/search', [PRController::class, 'searchPage'])->name('procurement.pr.search.page');
+        Route::get('/search-data', [PRController::class, 'search'])->name('search');
+        Route::get('/data', [PRController::class, 'data'])->name('data');
+        Route::get('/{purchaseRequest}', [PRController::class, 'show'])->name('show');
+        Route::get('/{purchaseRequest}/view', [PRController::class, 'show'])->name('view');
+        Route::get('/clear-search', [PRController::class, 'clearSearch'])->name('clear-search');
     });
 });

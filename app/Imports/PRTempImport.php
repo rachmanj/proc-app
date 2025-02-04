@@ -28,7 +28,7 @@ class PRTempImport implements ToModel, WithHeadingRow
             'requestor' => $row['requestor'] ?? null,
             'item_code' => $row['item_code'] ?? null,
             'item_name' => $row['item_name'] ?? null,
-            'Quantity' => $row['quantity'] ?? $row['Quantity'] ?? null,
+            'quantity' => $row['quantity'] ?? null,
             'uom' => $row['uom'] ?? null,
             'open_qty' => $row['open_qty'] ?? null,
             'line_remarks' => $row['line_remarks'] ?? null,

@@ -28,6 +28,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'akses_approval', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'akses_report', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'akses_proc_po', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'akses_proc_pr', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
         ];
 
         DB::table('permissions')->insert($permissions);
@@ -48,7 +49,7 @@ class RolePermissionSeeder extends Seeder
         $aksesProcPoPermissionId = DB::table('permissions')->where('name', 'akses_proc_po')->first()->id;
         $aksesApprovalPermissionId = DB::table('permissions')->where('name', 'akses_approval')->first()->id;
         $aksesReportPermissionId = DB::table('permissions')->where('name', 'akses_report')->first()->id;
-
+        $aksesProcPrPermissionId = DB::table('permissions')->where('name', 'akses_proc_pr')->first()->id;
         // assign permission to roles
         $rolePermissions = [
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesAdminPermissionId],
@@ -59,6 +60,7 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesReportPermissionId],
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesProcPoPermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesAdminPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesPermissionPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesUserPermissionId],
@@ -70,9 +72,11 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPoPermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesMasterPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesReportPermissionId],
+            ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesReportPermissionId],
         ];
@@ -84,6 +88,15 @@ class RolePermissionSeeder extends Seeder
             DB::table('model_has_roles')->insert([
                 'role_id' => $superadminRoleId,
                 'model_id' => $user->id,
+                'model_type' => 'App\Models\User',
+            ]);
+        }
+
+        $userProc = DB::table('users')->where('username', 'adminproc')->first();
+        if ($userProc) {
+            DB::table('model_has_roles')->insert([
+                'role_id' => $adminprocRoleId,
+                'model_id' => $userProc->id,
                 'model_type' => 'App\Models\User',
             ]);
         }

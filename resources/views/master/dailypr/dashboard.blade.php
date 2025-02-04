@@ -123,8 +123,8 @@
                         name: 'item_name'
                     },
                     {
-                        data: 'Quantity',
-                        name: 'Quantity'
+                        data: 'quantity',
+                        name: 'quantity'
                     },
                     {
                         data: 'uom',

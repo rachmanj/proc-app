@@ -24,7 +24,7 @@ class PrTemp extends Model
         'requestor',
         'item_code',
         'item_name',
-        'Quantity',
+        'quantity',
         'uom',
         'open_qty',
         'line_remarks',

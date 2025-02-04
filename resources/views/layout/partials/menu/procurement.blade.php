@@ -5,5 +5,9 @@
         @can('akses_proc_po')
             <li><a href="{{ route('procurement.po.index') }}" class="dropdown-item">Purchase Order</a></li>
         @endcan
+        @can('akses_proc_pr')
+            <li><a href="{{ route('procurement.pr.index') }}" class="dropdown-item">Purchase Requisition</a></li>
+        @endcan
     </ul>
+
 </li>
