@@ -19,14 +19,11 @@
             <x-proc-pr-links page="dashboard" />
 
 
-            <div class="card">
-                <div class="card-body">
-
-                </div>
-            </div>
+            @include('procurement.pr.dashboard._general_info')
         </div>
     </div>
 @endsection
+
 
 @section('scripts')
     <script>

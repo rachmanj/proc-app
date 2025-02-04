@@ -63,6 +63,10 @@
                                     <td>{{ $purchaseRequest->for_unit }}</td>
                                 </tr>
                                 <tr>
+                                    <th>Remarks</th>
+                                    <td>{{ $purchaseRequest->remarks }}</td>
+                                </tr>
+                                <tr>
                                     <th>Created At</th>
                                     <td>{{ $purchaseRequest->created_at->format('d M Y H:i') }}</td>
                                 </tr>

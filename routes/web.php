@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -23,6 +24,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::get('test', [TestController::class, 'index']);
 
     require __DIR__ . '/admin.php';
     require __DIR__ . '/procurement.php';

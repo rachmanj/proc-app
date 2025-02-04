@@ -26,7 +26,45 @@ class PRController extends Controller
             return $this->searchPage();
         }
 
+        if ($page == 'dashboard') {
+            $dashboardData = $this->getDashboardData();
+            return view($views[$page], $dashboardData);
+        }
+
         return view($views[$page]);
+    }
+
+    public function getDashboardData()
+    {
+        // Get distinct project codes ordered
+        $projectCodes = PurchaseRequest::distinct()
+            ->orderBy('project_code')
+            ->pluck('project_code')
+            ->toArray();
+
+        $prCountsByProject = PurchaseRequest::select('project_code', DB::raw('count(*) as total'))
+            ->groupBy('project_code')
+            ->get()
+            ->pluck('total', 'project_code')
+            ->toArray();
+
+        $openPrCountsByProject = PurchaseRequest::where('pr_status', 'OPEN')
+            ->select('project_code', DB::raw('count(*) as total'))
+            ->groupBy('project_code')
+            ->get()
+            ->pluck('total', 'project_code')
+            ->toArray();
+
+        $totalPRs = array_sum($prCountsByProject);
+        $totalOpenPRs = array_sum($openPrCountsByProject);
+
+        return compact(
+            'projectCodes',
+            'prCountsByProject',
+            'openPrCountsByProject',
+            'totalPRs',
+            'totalOpenPRs'
+        );
     }
 
     public function searchPage()
