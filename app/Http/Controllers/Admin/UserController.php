@@ -104,11 +104,28 @@ class UserController extends Controller
 
         $user->save();
 
+        // Update roles
         if ($request->has('roles')) {
             $roleNames = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
             $user->syncRoles($roleNames);
         } else {
             $user->syncRoles([]); // Clear roles if none are selected
+        }
+
+        // Update approval levels
+        $existingLevels = $user->approvers->pluck('approval_level_id')->toArray();
+        $newLevels = $request->approval_levels ?? [];
+
+        // Remove old approval levels that are not in the new selection
+        $user->approvers()->whereNotIn('approval_level_id', $newLevels)->delete();
+
+        // Add new approval levels
+        foreach ($newLevels as $levelId) {
+            if (!in_array($levelId, $existingLevels)) {
+                $user->approvers()->create([
+                    'approval_level_id' => $levelId
+                ]);
+            }
         }
 
         Alert::success('Success', 'User updated successfully');

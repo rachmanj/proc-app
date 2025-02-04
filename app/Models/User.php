@@ -55,4 +55,9 @@ class User extends Authenticatable
             'department_name' => 'n/a',
         ]);
     }
+
+    public function approvers()
+    {
+        return $this->hasMany(Approver::class);
+    }
 }

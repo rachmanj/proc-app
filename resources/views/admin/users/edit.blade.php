@@ -86,6 +86,26 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="card card-secondary mt-4">
+                    <div class="card-header">
+                        <div class="card-title">Assign Approval Levels</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            @foreach (\App\Models\ApprovalLevel::orderBy('level')->get() as $level)
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="approval-level-{{ $level->id }}"
+                                        name="approval_levels[]" value="{{ $level->id }}"
+                                        {{ $user->approvers->contains('approval_level_id', $level->id) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="approval-level-{{ $level->id }}">
+                                        {{ $level->name }}
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row">

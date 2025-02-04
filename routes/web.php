@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\PurchaseOrderApprovalController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -31,3 +32,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/procurement.php';
     require __DIR__ . '/master.php';
 });
+
+

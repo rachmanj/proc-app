@@ -15,6 +15,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'adminproc', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'buyer', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'director', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'user', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
         ];
 
         DB::table('roles')->insert($roles);
@@ -98,6 +99,47 @@ class RolePermissionSeeder extends Seeder
                 'role_id' => $adminprocRoleId,
                 'model_id' => $userProc->id,
                 'model_type' => 'App\Models\User',
+            ]);
+        }
+
+        $userProcMgr = DB::table('users')->where('username', 'procmgr')->first();
+        if ($userProcMgr) {
+            DB::table('model_has_roles')->insert([
+                'role_id' => $adminprocRoleId,
+                'model_id' => $userProcMgr->id,
+                'model_type' => 'App\Models\User',
+            ]);
+            }
+
+        $userDirector = DB::table('users')->where('username', 'director')->first();
+        if ($userDirector) {
+            DB::table('model_has_roles')->insert([
+                'role_id' => $directorRoleId,
+                'model_id' => $userDirector->id,
+                'model_type' => 'App\Models\User',
+            ]);
+        }
+
+        $approvalLevel1 = DB::table('approval_levels')->where('level', 1)->first();
+        $approvalLevel2 = DB::table('approval_levels')->where('level', 2)->first();
+
+        if ($approvalLevel1 && $userProcMgr) {
+            DB::table('purchase_order_approvals')->insert([
+                'purchase_order_id' => null, // Assuming you will set this later
+                'approver_id' => $userProcMgr->id,
+                'approval_level_id' => $approvalLevel1->id,
+                'status' => 'pending',
+                'notes' => 'Assigned to Procurement Manager'
+            ]);
+        }
+
+        if ($approvalLevel2 && $userDirector) {
+            DB::table('purchase_order_approvals')->insert([
+                'purchase_order_id' => null, // Assuming you will set this later
+                'approver_id' => $userDirector->id,
+                'approval_level_id' => $approvalLevel2->id,
+                'status' => 'pending',
+                'notes' => 'Assigned to Director'
             ]);
         }
     }

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->id();
-            $table->string('doc_num', 30);
+            $table->string('doc_num');
             $table->date('doc_date');
-            $table->date('create_date')->nullable();
-            $table->string('supplier_name')->nullable();
-            $table->string('status')->default('draft');
+            $table->date('create_date');
+            $table->string('supplier_name');
+            $table->enum('status', ['draft', 'submitted', 'approved_level_1', 'approved_level_2', 'rejected'])->default('draft');
             $table->timestamps();
         });
     }

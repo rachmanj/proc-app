@@ -31,10 +31,29 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        User::factory()->create([
+            'name' => 'Procurement Manager',
+            'email' => 'procmgr@gmail.com',
+            'username' => 'procmgr',
+            'password' => Hash::make('123456'),
+            'project' => '001H',
+            'is_active' => true,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Director',
+            'email' => 'director@gmail.com',
+            'username' => 'director',
+            'password' => Hash::make('123456'),
+            'project' => '001H',
+            'is_active' => true,
+        ]);
+        
         $this->call([
             ProjectsTableSeeder::class,
             DepartmentsTableSeeder::class,
             RolePermissionSeeder::class,
+            ApprovalLevelSeeder::class,
         ]);
     }
 }

@@ -17,7 +17,19 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Edit Purchase Order</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Edit Purchase Order</h3>
+                        <div>
+                            <span
+                                class="badge badge-{{ $purchaseOrder->status === 'draft'
+                                    ? 'secondary'
+                                    : ($purchaseOrder->status === 'rejected'
+                                        ? 'danger'
+                                        : 'info') }} p-2">
+                                Status: {{ ucfirst($purchaseOrder->status) }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 <form id="editForm" action="{{ route('procurement.po.update', $purchaseOrder->id) }}" method="POST">
@@ -143,10 +155,37 @@
                         </div>
                     </div>
 
+                    {{-- Footer with Update and Submit buttons --}}
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-sm btn-primary">Update Purchase Order</button>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" form="editForm" class="btn btn-sm btn-primary">Update Purchase
+                                    Order</button>
+                            </div>
+                            <div>
+                                @if ($purchaseOrder->status === 'draft')
+                                    <button type="submit" form="submitForApprovalForm" id="submitApprovalBtn"
+                                        name="submitApproval" class="btn btn-sm btn-success">
+                                        <i class="fas fa-paper-plane"></i> Submit for Approval
+                                    </button>
+                                @else
+                                    <span
+                                        class="badge badge-{{ $purchaseOrder->status === 'rejected' ? 'danger' : 'info' }} p-2">
+                                        Status: {{ ucfirst($purchaseOrder->status) }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </form>
+
+                {{-- Submit for Approval Form (Separate from Edit Form) --}}
+                @if ($purchaseOrder->status === 'draft')
+                    <form action="{{ route('procurement.po.submit', $purchaseOrder) }}" method="POST" class="d-inline"
+                        id="submitForApprovalForm">
+                        @csrf
+                    </form>
+                @endif
             </div>
         </div>
     </div>
@@ -165,6 +204,14 @@
     <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <script>
         $(document).ready(function() {
+            // Disable form fields if PO is not in draft status
+            @if ($purchaseOrder->status !== 'draft')
+                $('#editForm input, #editForm select, #editForm textarea').prop('disabled', true);
+                $('#editForm button[type="submit"]').prop('disabled', true);
+                $('.delete-attachment').prop('disabled', true);
+                $('[data-target="#uploadAttachmentsModal"]').prop('disabled', true);
+            @endif
+
             // Handle form submission
             $('#editForm').on('submit', function(e) {
                 e.preventDefault();
@@ -359,6 +406,59 @@
                                     errorMessage,
                                     'error'
                                 );
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Handle submit for approval
+            $('#submitForApprovalForm').on('submit', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                const url = form.attr('action');
+                const formData = form.serialize();
+
+                console.log('Submitting to:', url);
+                console.log('Form data:', formData);
+
+                Swal.fire({
+                    title: 'Submit for Approval?',
+                    text: "This purchase order will be locked for editing once submitted. Continue?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, submit it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: url,
+                            method: 'POST',
+                            data: formData,
+                            success: function(data) {
+                                console.log('Response:', data);
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success!',
+                                        text: data.message,
+                                        allowOutsideClick: false
+                                    }).then(() => window.location.reload());
+                                } else {
+                                    throw new Error(data.message ||
+                                        'Error submitting purchase order');
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Error:', error);
+                                console.log('XHR:', xhr.responseText);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: xhr.responseJSON?.message ||
+                                        'Error submitting purchase order'
+                                });
                             }
                         });
                     }

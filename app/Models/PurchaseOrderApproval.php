@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class PurchaseOrderApproval extends Model
+{
+    protected $fillable = [
+        'purchase_order_id',
+        'approver_id',
+        'approval_level_id',
+        'status',
+        'notes'
+    ];
+
+    protected $dates = ['approved_at'];
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(Approver::class);
+    }
+
+    public function approvalLevel()
+    {
+        return $this->belongsTo(ApprovalLevel::class);
+    }
+} 

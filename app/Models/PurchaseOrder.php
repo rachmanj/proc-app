@@ -52,4 +52,76 @@ class PurchaseOrder extends Model
 
         return $attachments;
     }
+
+    public function approvals()
+    {
+        return $this->hasMany(PurchaseOrderApproval::class);
+    }
+
+    public function submit()
+    {
+        $this->status = 'submitted';
+        $this->save();
+
+        // Create first level approval record
+        $firstLevel = ApprovalLevel::where('level', 1)->first();
+        $this->approvals()->create([
+            'approval_level_id' => $firstLevel->id,
+            'status' => 'pending'
+        ]);
+    }
+
+    public function approve($approverId, $notes = null)
+    {
+        $currentApproval = $this->approvals()->where('status', 'pending')->first();
+        
+        if (!$currentApproval) {
+            return false;
+        }
+
+        $currentApproval->update([
+            'status' => 'approved',
+            'approver_id' => $approverId,
+            'notes' => $notes,
+            'approved_at' => now()
+        ]);
+
+        if ($currentApproval->approvalLevel->level === 1) {
+            $this->status = 'approved_level_1';
+            $this->save();
+
+            // Create next level approval
+            $nextLevel = ApprovalLevel::where('level', 2)->first();
+            $this->approvals()->create([
+                'approval_level_id' => $nextLevel->id,
+                'status' => 'pending'
+            ]);
+        } else {
+            $this->status = 'approved_level_2';
+            $this->save();
+        }
+
+        return true;
+    }
+
+    public function reject($approverId, $notes = null)
+    {
+        $currentApproval = $this->approvals()->where('status', 'pending')->first();
+        
+        if (!$currentApproval) {
+            return false;
+        }
+
+        $currentApproval->update([
+            'status' => 'rejected',
+            'approver_id' => $approverId,
+            'notes' => $notes,
+            'approved_at' => now()
+        ]);
+
+        $this->status = 'rejected';
+        $this->save();
+
+        return true;
+    }
 }
