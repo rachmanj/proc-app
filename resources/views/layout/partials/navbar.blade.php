@@ -25,6 +25,10 @@
                     @include('layout.partials.menu.procurement')
                 @endcan
 
+                @can('akses_approval')
+                    @include('layout.partials.menu.approvals')
+                @endcan
+
                 @can('akses_master')
                     @include('layout.partials.menu.master')
                 @endcan

@@ -9,5 +9,4 @@
             <li><a href="{{ route('procurement.pr.index') }}" class="dropdown-item">Purchase Requisition</a></li>
         @endcan
     </ul>
-
 </li>

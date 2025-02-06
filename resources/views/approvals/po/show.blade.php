@@ -1,19 +1,20 @@
 @extends('layout.main')
 
 @section('title_page')
-    Purchase Order
+    Approvals
 @endsection
 
 @section('breadcrumb_title')
     <small>
-        procurement / purchase order / show
+        approvals / purchase order / show
     </small>
 @endsection
+
 
 @section('content')
     <div class="row">
         <div class="col-12">
-            <x-proc-po-links page="list" />
+            <x-aprv-po-links page="list" />
 
             <div class="card">
                 <div class="card-header">
@@ -210,10 +211,6 @@
                                                                 data-approval-id="{{ $approval->id }}">
                                                                 <i class="fas fa-times"></i> Reject
                                                             </button>
-                                                            <button class="btn btn-info btn-sm revise-btn"
-                                                                data-approval-id="{{ $approval->id }}">
-                                                                <i class="fas fa-sync"></i> Request Revision
-                                                            </button>
                                                         </div>
                                                     @endif
                                                 </div>
@@ -270,170 +267,4 @@
 
 @section('scripts')
     <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
-    <script>
-        $(document).ready(function() {
-            // Handle Approve button click
-            $('.approve-btn').on('click', function() {
-                const approvalId = $(this).data('approval-id');
-                Swal.fire({
-                    title: 'Approve Purchase Order',
-                    html: `
-                        <form id="approvalForm">
-                            <div class="form-group">
-                                <label for="notes" class="float-left">Notes (optional)</label>
-                                <textarea class="form-control" id="notes" rows="3"></textarea>
-                            </div>
-                        </form>
-                    `,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Approve',
-                    cancelButtonText: 'Cancel',
-                    showLoaderOnConfirm: true,
-                    preConfirm: () => {
-                        const notes = document.getElementById('notes').value;
-                        return $.ajax({
-                            url: `{{ route('procurement.po.approve', ':id') }}`
-                                .replace(':id', approvalId),
-                            method: 'POST',
-                            data: {
-                                _token: '{{ csrf_token() }}',
-                                notes: notes
-                            }
-                        });
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Success!',
-                            text: 'Purchase Order has been approved',
-                            icon: 'success'
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    }
-                }).catch(error => {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: error.responseJSON?.message ||
-                            'Error approving purchase order',
-                        icon: 'error'
-                    });
-                });
-            });
-
-            // Handle Reject button click
-            $('.reject-btn').on('click', function() {
-                const approvalId = $(this).data('approval-id');
-                Swal.fire({
-                    title: 'Reject Purchase Order',
-                    html: `
-                        <form id="rejectionForm">
-                            <div class="form-group">
-                                <label for="notes" class="float-left">Rejection Reason <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="notes" rows="3" required></textarea>
-                            </div>
-                        </form>
-                    `,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Reject',
-                    cancelButtonText: 'Cancel',
-                    showLoaderOnConfirm: true,
-                    preConfirm: () => {
-                        const notes = document.getElementById('notes').value;
-                        if (!notes.trim()) {
-                            Swal.showValidationMessage('Please provide a reason for rejection');
-                            return false;
-                        }
-                        return $.ajax({
-                            url: `{{ route('procurement.po.reject', ':id') }}`.replace(
-                                ':id', approvalId),
-                            method: 'POST',
-                            data: {
-                                _token: '{{ csrf_token() }}',
-                                notes: notes
-                            }
-                        });
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Rejected!',
-                            text: 'Purchase Order has been rejected',
-                            icon: 'success'
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    }
-                }).catch(error => {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: error.responseJSON?.message ||
-                            'Error rejecting purchase order',
-                        icon: 'error'
-                    });
-                });
-            });
-
-            // Handle Revise button click
-            $('.revise-btn').on('click', function() {
-                const approvalId = $(this).data('approval-id');
-                Swal.fire({
-                    title: 'Request Revision',
-                    html: `
-                        <form id="revisionForm">
-                            <div class="form-group">
-                                <label for="notes" class="float-left">Revision Notes <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="notes" rows="3" required></textarea>
-                            </div>
-                        </form>
-                    `,
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonColor: '#17a2b8',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Request Revision',
-                    cancelButtonText: 'Cancel',
-                    showLoaderOnConfirm: true,
-                    preConfirm: () => {
-                        const notes = document.getElementById('notes').value;
-                        if (!notes.trim()) {
-                            Swal.showValidationMessage('Please provide revision notes');
-                            return false;
-                        }
-                        return $.ajax({
-                            url: `{{ route('procurement.po.revise', ':id') }}`.replace(
-                                ':id', approvalId),
-                            method: 'POST',
-                            data: {
-                                _token: '{{ csrf_token() }}',
-                                notes: notes
-                            }
-                        });
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Success!',
-                            text: 'Revision has been requested',
-                            icon: 'success'
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    }
-                }).catch(error => {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: error.responseJSON?.message || 'Error requesting revision',
-                        icon: 'error'
-                    });
-                });
-            });
-        });
-    </script>
 @endsection

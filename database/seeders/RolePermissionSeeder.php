@@ -40,7 +40,6 @@ class RolePermissionSeeder extends Seeder
         $adminprocRoleId = DB::table('roles')->where('name', 'adminproc')->first()->id;
         $buyerRoleId = DB::table('roles')->where('name', 'buyer')->first()->id;
         $directorRoleId = DB::table('roles')->where('name', 'director')->first()->id;
-
         // get permission id
         $aksesAdminPermissionId = DB::table('permissions')->where('name', 'akses_admin')->first()->id;
         $aksesPermissionPermissionId = DB::table('permissions')->where('name', 'akses_permission')->first()->id;
@@ -74,12 +73,14 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPrPermissionId],
-            ['role_id' => $buyerRoleId, 'permission_id' => $aksesMasterPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesReportPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcPrPermissionId],
+            ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesApprovalPermissionId],
+            ['role_id' => $directorRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesReportPermissionId],
+            ['role_id' => $directorRoleId, 'permission_id' => $aksesProcurementPermissionId],
         ];
 
         DB::table('role_has_permissions')->insert($rolePermissions);
@@ -93,11 +94,11 @@ class RolePermissionSeeder extends Seeder
             ]);
         }
 
-        $userProc = DB::table('users')->where('username', 'adminproc')->first();
-        if ($userProc) {
+        $userBuyer = DB::table('users')->where('username', 'buyer1')->first();
+        if ($userBuyer) {
             DB::table('model_has_roles')->insert([
-                'role_id' => $adminprocRoleId,
-                'model_id' => $userProc->id,
+                'role_id' => $buyerRoleId,
+                'model_id' => $userBuyer->id,
                 'model_type' => 'App\Models\User',
             ]);
         }
@@ -123,23 +124,17 @@ class RolePermissionSeeder extends Seeder
         $approvalLevel1 = DB::table('approval_levels')->where('level', 1)->first();
         $approvalLevel2 = DB::table('approval_levels')->where('level', 2)->first();
 
-        if ($approvalLevel1 && $userProcMgr) {
-            DB::table('purchase_order_approvals')->insert([
-                'purchase_order_id' => null, // Assuming you will set this later
-                'approver_id' => $userProcMgr->id,
+        if ($approvalLevel1) {
+            DB::table('approvers')->insert([
+                'user_id' => $userProcMgr->id,
                 'approval_level_id' => $approvalLevel1->id,
-                'status' => 'pending',
-                'notes' => 'Assigned to Procurement Manager'
             ]);
         }
 
-        if ($approvalLevel2 && $userDirector) {
-            DB::table('purchase_order_approvals')->insert([
-                'purchase_order_id' => null, // Assuming you will set this later
-                'approver_id' => $userDirector->id,
+        if ($approvalLevel2) {
+            DB::table('approvers')->insert([
+                'user_id' => $userDirector->id,
                 'approval_level_id' => $approvalLevel2->id,
-                'status' => 'pending',
-                'notes' => 'Assigned to Director'
             ]);
         }
     }

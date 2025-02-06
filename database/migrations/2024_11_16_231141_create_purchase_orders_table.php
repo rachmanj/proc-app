@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('doc_date');
             $table->date('create_date');
             $table->string('supplier_name');
-            $table->enum('status', ['draft', 'submitted', 'approved_level_1', 'approved_level_2', 'rejected'])->default('draft');
+            $table->enum('status', ['draft', 'submitted', 'approved', 'rejected', 'revision'])->default('draft');
             $table->timestamps();
         });
     }

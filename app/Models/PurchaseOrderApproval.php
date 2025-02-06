@@ -26,8 +26,8 @@ class PurchaseOrderApproval extends Model
         return $this->belongsTo(Approver::class);
     }
 
-    public function approvalLevel()
+    public function approval_level()
     {
-        return $this->belongsTo(ApprovalLevel::class);
+        return $this->belongsTo(ApprovalLevel::class, 'approval_level_id');
     }
 } 

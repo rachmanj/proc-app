@@ -231,7 +231,7 @@ class POController extends Controller
                         return $po->create_date ? $po->create_date->format('d M Y') : '-';
                     })
                     ->editColumn('status', function ($po) {
-                        return '<span class="badge badge-' . ($po->status === 'draft' ? 'warning' : 'success') . '">'
+                        return '<span class="badge badge-' . ($po->status === 'draft' ? 'warning' : ($po->status === 'submitted' ? 'info' : ($po->status === 'approved' ? 'success' : ($po->status === 'rejected' ? 'danger' : '')))) . '">'
                             . ucfirst($po->status) . '</span>';
                     })
                     ->addColumn('action', function ($model) {

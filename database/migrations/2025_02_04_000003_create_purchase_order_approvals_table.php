@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('purchase_order_id')->constrained();
             $table->foreignId('approver_id')->nullable()->constrained();
             $table->foreignId('approval_level_id')->constrained();
-            $table->enum('status', ['pending', 'approved', 'rejected']);
+            $table->enum('status', ['pending', 'approved', 'rejected', 'revision']);
             $table->text('notes')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();

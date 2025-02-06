@@ -6,7 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class ApprovalLevel extends Model
 {
-    protected $fillable = ['name', 'level'];
+    protected $table = 'approval_levels';
+
+    protected $fillable = [
+        'name',
+        'level'
+    ];
+
+    public function approvals()
+    {
+        return $this->hasMany(PurchaseOrderApproval::class);
+    }
 
     public function approvers()
     {

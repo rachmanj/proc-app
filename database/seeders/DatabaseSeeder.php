@@ -32,6 +32,15 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory()->create([
+            'name' => 'Buyer One',
+            'email' => 'buyer@gmail.com',
+            'username' => 'buyer1',
+            'password' => Hash::make('123456'),
+            'project' => '001H',
+            'is_active' => true,
+        ]);
+
+        User::factory()->create([
             'name' => 'Procurement Manager',
             'email' => 'procmgr@gmail.com',
             'username' => 'procmgr',
@@ -48,6 +57,12 @@ class DatabaseSeeder extends Seeder
             'project' => '001H',
             'is_active' => true,
         ]);
+
+        $bodDepartmentId = DB::table('departments')->where('akronim', 'BOD')->value('id');
+        $procDepartmentId = DB::table('departments')->where('akronim', 'PROC')->value('id');
+        $itDepartmentId = DB::table('departments')->where('akronim', 'IT')->value('id');
+
+        
         
         $this->call([
             ProjectsTableSeeder::class,

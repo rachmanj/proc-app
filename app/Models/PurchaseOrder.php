@@ -5,9 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Log;
+use App\Models\Approver;
 
 class PurchaseOrder extends Model
 {
+    const STATUS_DRAFT = 'draft';
+    const STATUS_SUBMITTED = 'submitted';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+    const STATUS_REVISION = 'revision';
+
+    protected $attributes = [
+        'status' => self::STATUS_DRAFT
+    ];
+
     protected $fillable = [
         'doc_num',
         'doc_date',
@@ -60,7 +71,7 @@ class PurchaseOrder extends Model
 
     public function submit()
     {
-        $this->status = 'submitted';
+        $this->status = self::STATUS_SUBMITTED;
         $this->save();
 
         // Create first level approval record
@@ -73,35 +84,74 @@ class PurchaseOrder extends Model
 
     public function approve($approverId, $notes = null)
     {
-        $currentApproval = $this->approvals()->where('status', 'pending')->first();
-        
-        if (!$currentApproval) {
-            return false;
-        }
+        try {
+            // Find the current pending approval
+            $currentApproval = $this->approvals()
+                ->where('status', 'pending')
+                ->with('approval_level')
+                ->first();
 
-        $currentApproval->update([
-            'status' => 'approved',
-            'approver_id' => $approverId,
-            'notes' => $notes,
-            'approved_at' => now()
-        ]);
+            // Get the approver record for this user and level
+            $approver = Approver::where('user_id', $approverId)
+                ->where('approval_level_id', $currentApproval->approval_level_id)
+                ->first();
 
-        if ($currentApproval->approvalLevel->level === 1) {
-            $this->status = 'approved_level_1';
-            $this->save();
+            if (!$approver) {
+                throw new \Exception('User is not authorized to approve this level');
+            }
 
-            // Create next level approval
-            $nextLevel = ApprovalLevel::where('level', 2)->first();
-            $this->approvals()->create([
-                'approval_level_id' => $nextLevel->id,
-                'status' => 'pending'
+            Log::info('Approving PO:', [
+                'po_id' => $this->id,
+                'current_approval' => $currentApproval ? [
+                    'id' => $currentApproval->id,
+                    'level' => $currentApproval->approval_level->level ?? null,
+                    'status' => $currentApproval->status
+                ] : null
             ]);
-        } else {
-            $this->status = 'approved_level_2';
-            $this->save();
-        }
 
-        return true;
+            if (!$currentApproval) {
+                throw new \Exception('No pending approval found');
+            }
+
+            // Update the current approval
+            $currentApproval->update([
+                'status' => 'approved',
+                'approver_id' => $approver->id,
+                'notes' => $notes,
+                'approved_at' => now()
+            ]);
+
+            // Get the next approval level
+            $nextLevel = ApprovalLevel::where('level', '>', $currentApproval->approval_level->level)
+                ->orderBy('level')
+                ->first();
+
+            Log::info('Next approval level:', [
+                'current_level' => $currentApproval->approval_level->level,
+                'next_level' => $nextLevel ? $nextLevel->level : null
+            ]);
+
+            if ($nextLevel) {
+                // Create next level approval
+                $this->approvals()->create([
+                    'approval_level_id' => $nextLevel->id,
+                    'status' => 'pending'
+                ]);
+            } else {
+                // If no next level, mark PO as approved
+                $this->status = self::STATUS_APPROVED;
+                $this->save();
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error in PO approval: ' . $e->getMessage(), [
+                'purchase_order_id' => $this->id,
+                'approver_id' => $approverId,
+                'current_approval' => $currentApproval ?? null
+            ]);
+            throw $e;
+        }
     }
 
     public function reject($approverId, $notes = null)
@@ -112,14 +162,23 @@ class PurchaseOrder extends Model
             return false;
         }
 
+        // Get the approver record for this user and level
+        $approver = Approver::where('user_id', $approverId)
+            ->where('approval_level_id', $currentApproval->approval_level_id)
+            ->first();
+
+        if (!$approver) {
+            throw new \Exception('User is not authorized to reject this level');
+        }
+
         $currentApproval->update([
             'status' => 'rejected',
-            'approver_id' => $approverId,
+            'approver_id' => $approver->id,
             'notes' => $notes,
             'approved_at' => now()
         ]);
 
-        $this->status = 'rejected';
+        $this->status = self::STATUS_REJECTED;
         $this->save();
 
         return true;

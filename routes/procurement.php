@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('procurement')->name('procurement.')->group(function () {
     Route::prefix('po')->name('po.')->group(function () {
-        Route::get('/test-route', function() {
-            return response()->json(['message' => 'Route is working']);
-        })->name('test-route');
-
-        Route::post('/{purchaseOrder}/submit', [PurchaseOrderApprovalController::class, 'submit'])->name('submit');
 
         Route::get('/', [POController::class, 'index'])->name('index');
         Route::get('/search', [POController::class, 'search'])->name('search');
@@ -26,9 +21,10 @@ Route::prefix('procurement')->name('procurement.')->group(function () {
         Route::delete('/{purchaseOrder}', [POController::class, 'destroy'])->name('destroy');
 
         // Approval Routes
-        
-        Route::post('/{purchaseOrder}/approve', [PurchaseOrderApprovalController::class, 'approve'])->name('approve');
+        Route::post('/{purchaseOrder}/submit', [PurchaseOrderApprovalController::class, 'submit'])->name('submit');
+        Route::post('/{purchaseOrderApproval}/approve', [PurchaseOrderApprovalController::class, 'approve'])->name('approve');
         Route::post('/{purchaseOrder}/reject', [PurchaseOrderApprovalController::class, 'reject'])->name('reject');
+        Route::post('/{purchaseOrder}/revise', [PurchaseOrderApprovalController::class, 'revise'])->name('revise');
     });
 
     Route::prefix('pr')->name('pr.')->group(function () {

@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/admin.php';
     require __DIR__ . '/procurement.php';
     require __DIR__ . '/master.php';
+    require __DIR__ . '/approval.php';
 });
 
 
