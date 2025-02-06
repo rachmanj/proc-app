@@ -11,25 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchase_orders', function (Blueprint $table) {
+        Schema::create('po_temps', function (Blueprint $table) {
             $table->id();
-            $table->string('doc_num'); // PO Number
-            $table->date('doc_date'); // posting_date
-            $table->date('create_date'); // create_date
+            $table->string('po_no');
+            $table->date('posting_date');
+            $table->date('create_date');
             $table->date('po_delivery_date');
-            $table->foreignId('supplier_id')->constrained('suppliers');
-            $table->date('po_eta')->nullable();
-            $table->string('pr_no')->nullable();
-            $table->string('unit_no')->nullable();
+            $table->date('po_eta');
+            $table->string('pr_no');
+            $table->string('vendor_code');
+            $table->string('vendor_name');
+            $table->string('unit_no');
+            $table->string('item_code');
+            $table->text('description');
+            $table->integer('qty');
             $table->string('po_currency');
+            $table->decimal('unit_price', 15, 2);
+            $table->decimal('item_amount', 15, 2);
             $table->decimal('total_po_price', 15, 2);
             $table->decimal('po_with_vat', 15, 2);
+            $table->string('uom');
             $table->string('project_code');
             $table->string('dept_code');
             $table->string('po_status');
             $table->string('po_delivery_status');
             $table->string('budget_type');
-            $table->enum('status', ['draft', 'submitted', 'approved', 'rejected', 'revision'])->default('draft');
             $table->timestamps();
         });
     }
@@ -39,6 +45,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_orders');
+        Schema::dropIfExists('po_temps');
     }
 };

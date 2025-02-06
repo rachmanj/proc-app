@@ -19,13 +19,7 @@ class PurchaseOrder extends Model
         'status' => self::STATUS_DRAFT
     ];
 
-    protected $fillable = [
-        'doc_num',
-        'doc_date',
-        'create_date',
-        'supplier_name',
-        'status'
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'doc_date' => 'date',
@@ -182,5 +176,15 @@ class PurchaseOrder extends Model
         $this->save();
 
         return true;
+    }
+
+    public function details()
+    {
+        return $this->hasMany(PurchaseOrderDetail::class);
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
     }
 }

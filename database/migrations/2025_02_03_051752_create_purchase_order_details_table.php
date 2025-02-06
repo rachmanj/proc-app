@@ -14,13 +14,12 @@ return new class extends Migration
         Schema::create('purchase_order_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('purchase_order_id')->constrained('purchase_orders');
-            $table->string('item_code')->nullable();
-            $table->string('item_name')->nullable();
-            $table->integer('quantity')->nullable();
-            $table->string('uom', 30)->nullable();
-            $table->integer('open_qty')->nullable();
-            $table->text('line_remarks')->nullable();
-            $table->string('status', 30)->nullable();
+            $table->string('item_code');
+            $table->text('description');
+            $table->integer('qty');
+            $table->decimal('unit_price', 15, 2);
+            $table->decimal('item_amount', 15, 2);
+            $table->string('uom');
             $table->timestamps();
         });
     }
