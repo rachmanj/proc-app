@@ -1,44 +1,53 @@
 @extends('layout.main')
 
 @section('title_page')
-    Purchase Order
+    Purchase Order Details
 @endsection
 
 @section('breadcrumb_title')
-    <small>
-        procurement / purchase order / show
-    </small>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent mb-0">
+            <li class="breadcrumb-item"><a href="#">Procurement</a></li>
+            <li class="breadcrumb-item"><a href="#">Purchase Order</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Details</li>
+        </ol>
+    </nav>
 @endsection
 
 @section('content')
     <div class="row">
         <div class="col-12">
-            <x-proc-po-links page="list" />
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">View Purchase Order</h3>
-                    <a href="{{ url()->previous() }}" class="btn btn-sm btn-secondary float-right">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </a>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Purchase Order Information</h5>
+                        <div>
+                            <x-proc-po-links page="list" />
+                            <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm ms-2">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card">
+                <div class="card-body p-0">
                     {{-- Tabs Navigation --}}
-                    <ul class="nav nav-tabs" id="poTabs" role="tablist">
+                    <ul class="nav nav-tabs nav-tabs-custom" id="poTabs" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active" id="details-tab" data-toggle="tab" href="#details" role="tab">
-                                Purchase Order Details
+                            <a class="nav-link active px-4" id="details-tab" data-toggle="tab" href="#details"
+                                role="tab">
+                                <i class="fas fa-file-alt me-2"></i>Details
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="attachments-tab" data-toggle="tab" href="#attachments" role="tab">
-                                Attachments
+                            <a class="nav-link px-4" id="attachments-tab" data-toggle="tab" href="#attachments"
+                                role="tab">
+                                <i class="fas fa-paperclip me-2"></i>Attachments
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="approvals-tab" data-toggle="tab" href="#approvals" role="tab">
-                                Approval History
+                            <a class="nav-link px-4" id="approvals-tab" data-toggle="tab" href="#approvals" role="tab">
+                                <i class="fas fa-check-circle me-2"></i>Approval History
                             </a>
                         </li>
                     </ul>
@@ -47,49 +56,112 @@
                     <div class="tab-content" id="poTabsContent">
                         {{-- Details Tab --}}
                         <div class="tab-pane fade show active" id="details" role="tabpanel">
-                            <div class="card-body">
-                                <div class="row">
+                            <div class="p-4">
+                                {{-- Status Badge --}}
+                                <div class="mb-4">
+                                    <span
+                                        class="badge badge-{{ $purchaseOrder->status === 'draft' ? 'warning' : 'success' }} badge-lg">
+                                        {{ ucfirst($purchaseOrder->status) }}
+                                    </span>
+                                </div>
+
+                                {{-- PO Information --}}
+                                <div class="row g-4">
                                     <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Document Number</label>
-                                            <p class="form-control-static">{{ $purchaseOrder->doc_num }}</p>
+                                        <div class="card bg-light border-0">
+                                            <div class="card-body">
+                                                <h6 class="card-subtitle mb-3 text-muted">Document Information</h6>
+                                                <div class="mb-3">
+                                                    <label class="small text-muted d-block">Document Number</label>
+                                                    <strong>{{ $purchaseOrder->doc_num }}</strong>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="small text-muted d-block">Document Date</label>
+                                                    <strong>{{ $purchaseOrder->doc_date->format('d M Y') }}</strong>
+                                                </div>
+                                                <div>
+                                                    <label class="small text-muted d-block">Create Date</label>
+                                                    <strong>{{ $purchaseOrder->create_date ? $purchaseOrder->create_date->format('d M Y') : '-' }}</strong>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Document Date</label>
-                                            <p class="form-control-static">{{ $purchaseOrder->doc_date->format('d M Y') }}
-                                            </p>
+                                        <div class="card bg-light border-0">
+                                            <div class="card-body">
+                                                <h6 class="card-subtitle mb-3 text-muted">Supplier Information</h6>
+                                                <div class="mb-3">
+                                                    <label class="small text-muted d-block">Supplier Name</label>
+                                                    <strong>{{ $purchaseOrder->supplier->name ?? '-' }}</strong>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="small text-muted d-block">Project Code</label>
+                                                    <strong>{{ $purchaseOrder->project_code ?? '-' }}</strong>
+                                                </div>
+                                                <div>
+                                                    <label class="small text-muted d-block">Unit No</label>
+                                                    <strong>{{ $purchaseOrder->unit_no ?? '-' }}</strong>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Supplier Name</label>
-                                            <p class="form-control-static">{{ $purchaseOrder->supplier_name }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Create Date</label>
-                                            <p class="form-control-static">
-                                                {{ $purchaseOrder->create_date ? $purchaseOrder->create_date->format('d M Y') : '-' }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Status</label>
-                                            <p class="form-control-static">
-                                                <span
-                                                    class="badge badge-{{ $purchaseOrder->status === 'draft' ? 'warning' : 'success' }}">
-                                                    {{ ucfirst($purchaseOrder->status) }}
-                                                </span>
-                                            </p>
-                                        </div>
+
+                                {{-- PO Items Table --}}
+                                <div class="mt-4">
+                                    <h6 class="mb-3">Purchase Order Items</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="text-center" style="width: 60px">No.</th>
+                                                    <th>Item Code</th>
+                                                    <th>Description</th>
+                                                    <th class="text-end" style="width: 100px">Qty</th>
+                                                    <th style="width: 100px">UOM</th>
+                                                    <th class="text-end" style="width: 150px">Unit Price</th>
+                                                    <th class="text-end" style="width: 150px">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($purchaseOrder->purchaseOrderDetails as $index => $detail)
+                                                    <tr>
+                                                        <td class="text-center">{{ $index + 1 }}</td>
+                                                        <td>{{ $detail->item_code }}</td>
+                                                        <td>{{ $detail->description }}</td>
+                                                        <td class="text-end">{{ number_format($detail->qty, 2) }}</td>
+                                                        <td>{{ $detail->uom }}</td>
+                                                        <td class="text-end">{{ number_format($detail->unit_price, 2) }}
+                                                        </td>
+                                                        <td class="text-end">
+                                                            {{ number_format($detail->qty * $detail->unit_price, 2) }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="7" class="text-center text-muted py-3">No items
+                                                            found</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                            @if ($purchaseOrder->purchaseOrderDetails->isNotEmpty())
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <td colspan="6" class="text-end"><strong>Total Amount:</strong>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <strong>
+                                                                {{ number_format(
+                                                                    $purchaseOrder->purchaseOrderDetails->sum(function ($detail) {
+                                                                        return $detail->qty * $detail->unit_price;
+                                                                    }),
+                                                                    2,
+                                                                ) }}
+                                                            </strong>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            @endif
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -233,37 +305,43 @@
 @section('styles')
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.css') }}">
     <style>
-        .timeline {
-            position: relative;
-            padding: 20px 0;
-        }
-
-        .timeline-item {
-            position: relative;
-            padding-left: 40px;
-            margin-bottom: 20px;
-        }
-
-        .timeline-item-marker {
-            position: absolute;
-            left: 0;
-            top: 0;
-        }
-
-        .timeline-item-marker-indicator {
-            width: 24px;
-            height: 24px;
-            border-radius: 100%;
-            text-align: center;
-            line-height: 24px;
-            color: #fff;
-        }
-
-        .timeline-item-content {
-            padding: 15px;
-            border-radius: 4px;
+        .nav-tabs-custom {
+            border-bottom: 1px solid #dee2e6;
             background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+        }
+
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #6c757d;
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-tabs-custom .nav-link:hover {
+            color: #495057;
+            border-color: transparent;
+        }
+
+        .nav-tabs-custom .nav-link.active {
+            color: #2196f3;
+            background: none;
+            border-bottom: 2px solid #2196f3;
+        }
+
+        .badge-lg {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .table> :not(caption)>*>* {
+            padding: 0.75rem 1rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
     </style>
 @endsection

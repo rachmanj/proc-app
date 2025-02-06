@@ -178,13 +178,13 @@ class PurchaseOrder extends Model
         return true;
     }
 
-    public function details()
-    {
-        return $this->hasMany(PurchaseOrderDetail::class);
-    }
-
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function purchaseOrderDetails()
+    {
+        return $this->hasMany(PurchaseOrderDetail::class);
     }
 }

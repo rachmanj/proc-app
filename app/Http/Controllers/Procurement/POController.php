@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\PoAttachment;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class POController extends Controller
 {
@@ -21,6 +23,15 @@ class POController extends Controller
             'list' => 'procurement.po.list',
             'search' => 'procurement.po.search',
         ];
+
+        if ($page == 'search') {
+            $suppliers = Supplier::orderBy('name')->pluck('name');
+            $unitNos = PurchaseOrder::distinct()->orderBy('unit_no')->pluck('unit_no');
+            $projectCodes = PurchaseOrder::distinct()->orderBy('project_code')->pluck('project_code');
+            $statuses = PurchaseOrder::distinct()->orderBy('status')->pluck('status');
+
+            return view($views[$page], compact('suppliers', 'unitNos', 'projectCodes', 'statuses'));
+        } 
 
         return view($views[$page]);
     }
@@ -130,7 +141,9 @@ class POController extends Controller
 
     public function edit(PurchaseOrder $purchaseOrder)
     {
-        return view('procurement.po.edit', compact('purchaseOrder'));
+        $suppliers = Supplier::orderBy('name')->get();
+        
+        return view('procurement.po.edit', compact('purchaseOrder', 'suppliers'));
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
@@ -139,15 +152,52 @@ class POController extends Controller
             'doc_num' => 'required|string|max:30|unique:purchase_orders,doc_num,' . $purchaseOrder->id,
             'doc_date' => 'required|date',
             'create_date' => 'nullable|date',
-            'supplier_name' => 'required|string|max:255',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'project_code' => 'nullable|string|max:50',
+            'unit_no' => 'nullable|string|max:50',
+            'items' => 'required|array|min:1',
+            'items.*.item_code' => 'required|string|max:50',
+            'items.*.description' => 'required|string',
+            'items.*.qty' => 'required|numeric|min:0',
+            'items.*.uom' => 'required|string|max:20',
+            'items.*.unit_price' => 'required|numeric|min:0',
         ]);
 
-        $purchaseOrder->update($validated);
+        try {
+            DB::transaction(function() use ($purchaseOrder, $validated) {
+                // Update PO header
+                $purchaseOrder->update([
+                    'doc_num' => $validated['doc_num'],
+                    'doc_date' => $validated['doc_date'],
+                    'create_date' => $validated['create_date'],
+                    'supplier_id' => $validated['supplier_id'],
+                    'project_code' => $validated['project_code'],
+                    'unit_no' => $validated['unit_no'],
+                ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Purchase Order updated successfully!'
-        ]);
+                // Update PO details
+                $purchaseOrder->purchaseOrderDetails()->delete(); // Remove existing items
+                foreach ($validated['items'] as $item) {
+                    $purchaseOrder->purchaseOrderDetails()->create([
+                        'item_code' => $item['item_code'],
+                        'description' => $item['description'],
+                        'qty' => $item['qty'],
+                        'uom' => $item['uom'],
+                        'unit_price' => $item['unit_price'],
+                    ]);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Purchase Order updated successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating purchase order: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getAttachments(PurchaseOrder $purchaseOrder)
@@ -202,15 +252,33 @@ class POController extends Controller
     {
         try {
             if ($request->ajax()) {
-                $query = PurchaseOrder::query()->orderBy('created_at', 'desc');
+                $query = PurchaseOrder::with('supplier')->orderBy('created_at', 'desc');
 
                 // Apply filters
                 if ($request->doc_num) {
                     $query->where('doc_num', 'like', '%' . $request->doc_num . '%');
                 }
 
+                if ($request->pr_num) {
+                    $query->where('pr_num', 'like', '%' . $request->pr_num . '%');
+                }
+
                 if ($request->supplier_name) {
-                    $query->where('supplier_name', 'like', '%' . $request->supplier_name . '%');
+                    $query->whereHas('supplier', function($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->supplier_name . '%');
+                    });
+                }
+
+                if ($request->unit_no) {
+                    $query->where('unit_no', $request->unit_no);
+                }
+
+                if ($request->project_code) {
+                    $query->where('project_code', $request->project_code);
+                }
+
+                if ($request->status) {
+                    $query->where('status', $request->status);
                 }
 
                 if ($request->date_from) {
@@ -230,6 +298,9 @@ class POController extends Controller
                     ->editColumn('create_date', function ($po) {
                         return $po->create_date ? $po->create_date->format('d M Y') : '-';
                     })
+                    ->editColumn('supplier_name', function ($po) {
+                        return $po->supplier->name ?? '-';
+                    })
                     ->editColumn('status', function ($po) {
                         return '<span class="badge badge-' . ($po->status === 'draft' ? 'warning' : ($po->status === 'submitted' ? 'info' : ($po->status === 'approved' ? 'success' : ($po->status === 'rejected' ? 'danger' : '')))) . '">'
                             . ucfirst($po->status) . '</span>';
@@ -241,7 +312,13 @@ class POController extends Controller
                     ->make(true);
             }
 
-            return view('procurement.po.search');
+            // Get distinct values for dropdowns
+            $suppliers = \App\Models\Supplier::orderBy('name')->pluck('name');
+            $unitNos = PurchaseOrder::distinct()->orderBy('unit_no')->pluck('unit_no');
+            $projectCodes = PurchaseOrder::distinct()->orderBy('project_code')->pluck('project_code');
+            $statuses = PurchaseOrder::distinct()->orderBy('status')->pluck('status');
+
+            return view('procurement.po.search', compact('suppliers', 'unitNos', 'projectCodes', 'statuses'));
         } catch (\Exception $e) {
             Log::error('Error in search: ' . $e->getMessage());
             return response()->json([
