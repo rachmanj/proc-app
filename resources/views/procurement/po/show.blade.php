@@ -222,76 +222,122 @@
 
                         {{-- Approvals Tab --}}
                         <div class="tab-pane fade" id="approvals" role="tabpanel">
-                            <div class="card-body">
-                                <div class="timeline">
-                                    @if ($purchaseOrder->approvals->isEmpty())
-                                        <div class="text-center text-muted">
-                                            @if ($purchaseOrder->status === 'draft')
-                                                <p>Purchase Order has not been submitted for approval yet.</p>
+                            <div class="p-4">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <!-- The time line -->
+                                        <div class="timeline">
+                                            @if ($purchaseOrder->approvals->isEmpty())
+                                                <div>
+                                                    <i class="fas fa-info-circle bg-info"></i>
+                                                    <div class="timeline-item">
+                                                        <h3 class="timeline-header no-border">
+                                                            @if ($purchaseOrder->status === 'draft')
+                                                                Purchase Order has not been submitted for approval yet.
+                                                            @else
+                                                                No approval history found.
+                                                            @endif
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <i class="fas fa-clock bg-gray"></i>
+                                                </div>
                                             @else
-                                                <p>No approval history found.</p>
+                                                <!-- Group approvals by date -->
+                                                @php
+                                                    $approvalsByDate = $purchaseOrder->approvals
+                                                        ->sortBy('created_at')
+                                                        ->groupBy(function ($approval) {
+                                                            return $approval->created_at->format('Y-m-d');
+                                                        });
+                                                @endphp
+
+                                                @foreach ($approvalsByDate as $date => $approvals)
+                                                    <!-- Timeline time label -->
+                                                    <div class="time-label">
+                                                        <span
+                                                            class="bg-primary">{{ \Carbon\Carbon::parse($date)->format('d M Y') }}</span>
+                                                    </div>
+
+                                                    @foreach ($approvals->sortBy('approval_level.level') as $approval)
+                                                        <!-- Timeline item -->
+                                                        <div>
+                                                            @if ($approval->status === 'pending')
+                                                                <i class="fas fa-clock bg-warning"></i>
+                                                            @elseif($approval->status === 'approved')
+                                                                <i class="fas fa-check bg-success"></i>
+                                                            @elseif($approval->status === 'rejected')
+                                                                <i class="fas fa-times bg-danger"></i>
+                                                            @elseif($approval->status === 'revision')
+                                                                <i class="fas fa-sync bg-info"></i>
+                                                            @else
+                                                                <i class="fas fa-file-alt bg-secondary"></i>
+                                                            @endif
+
+                                                            <div class="timeline-item">
+                                                                @if ($approval->approved_at)
+                                                                    <span class="time">
+                                                                        <i class="fas fa-clock"></i>
+                                                                        {{ $approval->approved_at->format('H:i') }}
+                                                                    </span>
+                                                                @endif
+
+                                                                <h3 class="timeline-header">
+                                                                    <strong>Level
+                                                                        {{ $approval->approval_level->level }}:</strong>
+                                                                    {{ $approval->approval_level->name }}
+                                                                    <span
+                                                                        class="badge badge-{{ $approval->status === 'pending' ? 'warning' : ($approval->status === 'approved' ? 'success' : 'danger') }} ml-2">
+                                                                        {{ ucfirst($approval->status) }}
+                                                                    </span>
+                                                                </h3>
+
+                                                                <div class="timeline-body">
+                                                                    @if ($approval->approver)
+                                                                        <p class="mb-1">
+                                                                            <strong>Approver:</strong>
+                                                                            {{ $approval->approver->user->name }}
+                                                                        </p>
+                                                                    @endif
+
+                                                                    @if ($approval->notes)
+                                                                        <p class="mb-0">
+                                                                            <strong>Notes:</strong> {{ $approval->notes }}
+                                                                        </p>
+                                                                    @endif
+                                                                </div>
+
+                                                                @if (
+                                                                    $approval->status === 'pending' &&
+                                                                        auth()->user()->approvers->contains('approval_level_id', $approval->approval_level_id))
+                                                                    <div class="timeline-footer">
+                                                                        <button class="btn btn-success btn-sm approve-btn"
+                                                                            data-approval-id="{{ $approval->id }}">
+                                                                            <i class="fas fa-check"></i> Approve
+                                                                        </button>
+                                                                        <button class="btn btn-danger btn-sm reject-btn"
+                                                                            data-approval-id="{{ $approval->id }}">
+                                                                            <i class="fas fa-times"></i> Reject
+                                                                        </button>
+                                                                        <button class="btn btn-info btn-sm revise-btn"
+                                                                            data-approval-id="{{ $approval->id }}">
+                                                                            <i class="fas fa-sync"></i> Request Revision
+                                                                        </button>
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                @endforeach
+
+                                                <!-- Timeline end -->
+                                                <div>
+                                                    <i class="fas fa-clock bg-gray"></i>
+                                                </div>
                                             @endif
                                         </div>
-                                    @else
-                                        @foreach ($purchaseOrder->approvals->sortBy('approval_level.level') as $approval)
-                                            <div class="timeline-item">
-                                                <div class="timeline-item-marker">
-                                                    <div
-                                                        class="timeline-item-marker-indicator bg-{{ $approval->status === 'pending' ? 'warning' : ($approval->status === 'approved' ? 'success' : 'danger') }}">
-                                                        <i
-                                                            class="fas fa-{{ $approval->status === 'pending' ? 'clock' : ($approval->status === 'approved' ? 'check' : 'times') }}"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="timeline-item-content">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span class="font-weight-bold">
-                                                            Level {{ $approval->approval_level->level }}:
-                                                            {{ $approval->approval_level->name }}
-                                                        </span>
-                                                        <span
-                                                            class="badge badge-{{ $approval->status === 'pending' ? 'warning' : ($approval->status === 'approved' ? 'success' : 'danger') }}">
-                                                            {{ ucfirst($approval->status) }}
-                                                        </span>
-                                                    </div>
-                                                    @if ($approval->approver)
-                                                        <div class="text-muted small">
-                                                            Approved by: {{ $approval->approver->user->name }}
-                                                        </div>
-                                                    @endif
-                                                    @if ($approval->notes)
-                                                        <div class="mt-2">
-                                                            <strong>Notes:</strong>
-                                                            <p class="mb-0">{{ $approval->notes }}</p>
-                                                        </div>
-                                                    @endif
-                                                    @if ($approval->approved_at)
-                                                        <div class="text-muted small mt-1">
-                                                            {{ $approval->approved_at->format('d M Y H:i:s') }}
-                                                        </div>
-                                                    @endif
-
-                                                    @if (
-                                                        $approval->status === 'pending' &&
-                                                            auth()->user()->approvers->contains('approval_level_id', $approval->approval_level_id))
-                                                        <div class="mt-3">
-                                                            <button class="btn btn-success btn-sm approve-btn"
-                                                                data-approval-id="{{ $approval->id }}">
-                                                                <i class="fas fa-check"></i> Approve
-                                                            </button>
-                                                            <button class="btn btn-danger btn-sm reject-btn"
-                                                                data-approval-id="{{ $approval->id }}">
-                                                                <i class="fas fa-times"></i> Reject
-                                                            </button>
-                                                            <button class="btn btn-info btn-sm revise-btn"
-                                                                data-approval-id="{{ $approval->id }}">
-                                                                <i class="fas fa-sync"></i> Request Revision
-                                                            </button>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
