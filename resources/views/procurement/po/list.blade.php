@@ -47,7 +47,10 @@
 @endsection
 
 @section('scripts')
-    <!-- DataTables  & Plugins -->
+    <!-- jQuery should be loaded first if not already included in your layout -->
+    <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
+
+    <!-- Then load DataTables -->
     <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>

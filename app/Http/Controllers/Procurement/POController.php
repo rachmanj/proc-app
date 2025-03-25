@@ -106,7 +106,9 @@ class POController extends Controller
 
     public function data()
     {
-        $query = PurchaseOrder::query()->orderBy('created_at', 'desc');
+        $query = PurchaseOrder::query()
+            ->with('supplier')
+            ->orderBy('created_at', 'desc');
 
         return datatables()->of($query)
             ->editColumn('doc_date', function ($po) {
@@ -114,6 +116,9 @@ class POController extends Controller
             })
             ->editColumn('create_date', function ($po) {
                 return $po->create_date ? $po->create_date->format('d M Y') : '-';
+            })
+            ->addColumn('supplier_name', function ($po) {
+                return $po->supplier ? $po->supplier->name : '-';
             })
             ->addColumn('action', function ($model) {
                 return view('procurement.po.action', compact('model'))->render();

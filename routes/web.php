@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\PurchaseOrderApprovalController;
+use App\Http\Controllers\PurchaseOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -27,6 +28,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::get('test', [TestController::class, 'index']);
+
+    Route::get('procurement/po', [PurchaseOrderController::class, 'index'])->name('procurement.po.list');
+    Route::get('procurement/po/data', [PurchaseOrderController::class, 'data'])->name('procurement.po.data');
+    Route::delete('procurement/po/{id}', [PurchaseOrderController::class, 'destroy']);
 
     require __DIR__ . '/admin.php';
     require __DIR__ . '/procurement.php';

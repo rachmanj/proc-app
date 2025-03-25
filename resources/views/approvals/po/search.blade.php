@@ -23,7 +23,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Document Number</label>
+                                    <label>PO Number</label>
                                     <input type="text" class="form-control" id="doc_num" name="doc_num">
                                 </div>
                             </div>
