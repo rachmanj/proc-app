@@ -89,6 +89,7 @@ class POController extends Controller
 
     public function store(Request $request)
     {
+       
         $validated = $request->validate([
             'doc_num' => 'required|string|max:30|unique:purchase_orders',
             'doc_date' => 'required|date',

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('qty');
             $table->decimal('unit_price', 15, 2);
             $table->decimal('item_amount', 15, 2);
-            $table->string('uom');
+            $table->string('uom')->nullable();
             $table->timestamps();
         });
     }

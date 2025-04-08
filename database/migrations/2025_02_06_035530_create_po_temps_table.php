@@ -30,7 +30,7 @@ return new class extends Migration
             $table->decimal('item_amount', 15, 2);
             $table->decimal('total_po_price', 15, 2);
             $table->decimal('po_with_vat', 15, 2);
-            $table->string('uom');
+            $table->string('uom')->nullable();
             $table->string('project_code');
             $table->string('dept_code');
             $table->string('po_status');

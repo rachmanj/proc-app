@@ -14,6 +14,7 @@ use App\Models\PurchaseOrderDetail;
 use Illuminate\Support\Facades\Log;
 use App\Models\Supplier;
 
+
 class POTempController extends Controller
 {
     public function index()
