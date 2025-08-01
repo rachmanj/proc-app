@@ -16,7 +16,10 @@ Route::prefix('procurement')->name('procurement.')->group(function () {
         Route::put('/{purchaseOrder}', [POController::class, 'update'])->name('update');
         Route::get('/{purchaseOrder}/attachments', [POController::class, 'getAttachments'])->name('get-attachments');
         Route::post('/{purchaseOrder}/upload-attachments', [POController::class, 'uploadAttachments'])->name('upload-attachments');
+        Route::post('/update-attachment/{attachmentId}', [POController::class, 'updateAttachment'])->name('update-attachment');
         Route::delete('/detach-file/{attachmentId}', [POController::class, 'detachFile'])->name('detach-file');
+        Route::get('/attachments/{attachmentId}/view', [POController::class, 'viewAttachment'])->name('view-attachment');
+        Route::get('/attachments/{attachmentId}/preview-excel', [POController::class, 'previewExcel'])->name('preview-excel');
         Route::get('/{purchaseOrder}', [POController::class, 'show'])->name('show');
         Route::delete('/{purchaseOrder}', [POController::class, 'destroy'])->name('destroy');
 
@@ -34,6 +37,16 @@ Route::prefix('procurement')->name('procurement.')->group(function () {
         Route::get('/data', [PRController::class, 'data'])->name('data');
         Route::get('/{purchaseRequest}', [PRController::class, 'show'])->name('show');
         Route::get('/{purchaseRequest}/view', [PRController::class, 'show'])->name('view');
+        Route::get('/{purchaseRequest}/edit', [PRController::class, 'edit'])->name('edit');
+        Route::put('/{purchaseRequest}', [PRController::class, 'update'])->name('update');
         Route::get('/clear-search', [PRController::class, 'clearSearch'])->name('clear-search');
+        
+        // Attachment routes
+        Route::get('/{purchaseRequest}/attachments', [PRController::class, 'getAttachments'])->name('get-attachments');
+        Route::post('/{purchaseRequest}/upload-attachments', [PRController::class, 'uploadAttachments'])->name('upload-attachments');
+        Route::post('/attachments/{attachment}', [PRController::class, 'updateAttachment'])->name('update-attachment');
+        Route::delete('/attachments/{attachment}', [PRController::class, 'detachFile'])->name('detach-file');
+        Route::get('/attachments/{attachment}/view', [PRController::class, 'viewAttachment'])->name('view-attachment');
+        Route::get('/attachments/{attachment}/preview-excel', [PRController::class, 'previewExcel'])->name('preview-excel');
     });
 });

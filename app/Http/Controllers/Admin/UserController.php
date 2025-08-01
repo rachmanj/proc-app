@@ -169,4 +169,37 @@ class UserController extends Controller
             ->rawColumns(['action', 'is_active'])
             ->toJson();
     }
+
+    public function change_password($id)
+    {
+        $user = User::findOrFail($id);
+        
+        return view('admin.users.change_password', compact('user'));
+    }
+
+    public function password_update(Request $request, $id)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = User::findOrFail($id);
+
+        // Verify current password (only if the user is changing their own password)
+        if (auth()->id() == $user->id) {
+            if (!password_verify($request->current_password, $user->password)) {
+                Alert::error('Error', 'Current password is incorrect');
+                return redirect()->back();
+            }
+        }
+
+        // Update password
+        $user->password = bcrypt($request->password);
+        $user->save();
+
+        Alert::success('Success', 'Password updated successfully');
+
+        return redirect()->route('admin.users.index');
+    }
 }

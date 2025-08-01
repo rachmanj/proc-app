@@ -29,11 +29,11 @@ class PurchaseOrderApprovalController extends Controller
         }
 
         try {
-            // Update status
+            // Update status and submitted_by
             $purchaseOrder->status = 'submitted';
+            $purchaseOrder->submitted_by = auth()->user()->name;
             $purchaseOrder->save();
             Log::info('PO status updated to submitted');
-
 
             // Create first level approval record
             $firstLevel = ApprovalLevel::where('level', 1)->first();
@@ -42,14 +42,12 @@ class PurchaseOrderApprovalController extends Controller
                 throw new \Exception('Approval level 1 not found');
             }
 
-
             $purchaseOrder->approvals()->create([
                 'approval_level_id' => $firstLevel->id,
                 'status' => 'pending',
                 'approver_id' => null
             ]);
             Log::info('Approval record created');
-
 
             return response()->json([
                 'success' => true,

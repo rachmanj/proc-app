@@ -115,8 +115,8 @@
                                             <thead class="table-light">
                                                 <tr>
                                                     <th class="text-center" style="width: 60px">No.</th>
-                                                    <th>Item Code</th>
-                                                    <th>Description</th>
+                                                    <th>Item Code @if($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))<small class="text-muted">(<span class="text-primary">CONSIGNMENT</span>)</small>@endif</th>
+                                                    <th>Description @if($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))<small class="text-muted">(<span class="text-primary">CONSIGNMENT</span>)</small>@endif</th>
                                                     <th class="text-end" style="width: 100px">Qty</th>
                                                     <th style="width: 100px">UOM</th>
                                                     <th class="text-end" style="width: 150px">Unit Price</th>
@@ -127,8 +127,20 @@
                                                 @forelse($purchaseOrder->purchaseOrderDetails as $index => $detail)
                                                     <tr>
                                                         <td class="text-center">{{ $index + 1 }}</td>
-                                                        <td>{{ $detail->item_code }}</td>
-                                                        <td>{{ $detail->description }}</td>
+                                                        <td>
+                                                            @if($detail->item_code === 'CONSIGNMENT')
+                                                                {{ $detail->remark1 ?? $detail->item_code }}
+                                                            @else
+                                                                {{ $detail->item_code }}
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($detail->item_code === 'CONSIGNMENT')
+                                                                {{ $detail->remark2 ?? $detail->description }}
+                                                            @else
+                                                                {{ $detail->description }}
+                                                            @endif
+                                                        </td>
                                                         <td class="text-end">{{ number_format($detail->qty, 2) }}</td>
                                                         <td>{{ $detail->uom }}</td>
                                                         <td class="text-end">{{ number_format($detail->unit_price, 2) }}
@@ -169,13 +181,23 @@
 
                         {{-- Attachments Tab --}}
                         <div class="tab-pane fade" id="attachments" role="tabpanel">
-                            <div class="card-body">
-                                <div class="row" id="attachments-container">
-                                    @foreach ($purchaseOrder->attachments as $attachment)
-                                        <div class="col-md-3 col-sm-4 mb-3">
-                                            <div class="card h-100">
-                                                <div class="card-body p-2">
-                                                    <div class="text-center mb-2">
+                            <div class="p-4">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center" style="width: 50px">No</th>
+                                                <th class="text-center" style="width: 100px">Preview</th>
+                                                <th style="width: 300px">File Name</th>
+                                                <th style="width: 200px">Remarks</th>
+                                                <th class="text-center" style="width: 100px">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse ($purchaseOrder->attachments as $index => $attachment)
+                                                <tr>
+                                                    <td class="text-center">{{ $index + 1 }}</td>
+                                                    <td class="text-center">
                                                         @php
                                                             $extension = strtolower(
                                                                 pathinfo($attachment->file_path, PATHINFO_EXTENSION),
@@ -190,32 +212,51 @@
 
                                                         @if ($isImage)
                                                             <img src="{{ asset('storage/' . $attachment->file_path) }}"
-                                                                class="img-fluid" style="max-height: 100px;"
+                                                                class="img-fluid" style="max-height: 50px;"
                                                                 alt="Attachment preview">
+                                                        @elseif (in_array(strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)), ['xlsx', 'xls']))
+                                                            <i class="fas fa-file-excel fa-2x text-success"></i>
+                                                        @elseif (strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)) === 'pdf')
+                                                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
                                                         @else
-                                                            <i class="fas fa-file fa-3x text-secondary"></i>
+                                                            <i class="fas fa-file fa-2x text-secondary"></i>
                                                         @endif
-                                                    </div>
-                                                    <p class="small text-muted mb-1 text-truncate"
-                                                        title="{{ $attachment->original_name }}">
-                                                        {{ $attachment->original_name }}
-                                                    </p>
-                                                    <div class="text-center">
-                                                        <a href="{{ asset('storage/' . $attachment->file_path) }}"
-                                                            class="btn btn-xs btn-info" target="_blank">
-                                                            <i class="fas fa-eye"></i> View
+                                                    </td>
+                                                    <td>
+                                                        <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                                            title="{{ $attachment->original_name }}">
+                                                            {{ $attachment->original_name }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        @if($attachment->description)
+                                                            <span class="text-muted">{{ $attachment->description }}</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <a href="{{ route('procurement.po.view-attachment', ['attachmentId' => $attachment->id]) }}"
+                                                            class="btn btn-info btn-sm view-attachment-btn" 
+                                                            target="_blank"
+                                                            data-file-type="{{ $attachment->file_type }}"
+                                                            title="View File">
+                                                            <i class="fas fa-eye"></i>
                                                         </a>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-
-                                    @if ($purchaseOrder->attachments->isEmpty())
-                                        <div class="col-12">
-                                            <p class="text-muted">No attachments found.</p>
-                                        </div>
-                                    @endif
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="5" class="text-center py-3">
+                                                        <div class="text-muted">
+                                                            <i class="fas fa-info-circle me-1"></i>
+                                                            No attachments found
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -342,6 +383,57 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Preview Modal -->
+    <div class="modal fade" id="excelPreviewModal" tabindex="-1" role="dialog" aria-labelledby="excelPreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="excelPreviewModalLabel">
+                        <i class="fas fa-file-excel text-success me-2"></i>
+                        Preview Excel File
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <div>
+                            <strong id="excelFileName">Loading...</strong>
+                            <br>
+                            <small class="text-muted" id="excelFileInfo">File information</small>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="downloadExcelBtn">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="openInNewTabBtn">
+                                <i class="fas fa-external-link-alt"></i> Open in New Tab
+                            </button>
+                        </div>
+                    </div>
+                    <div class="position-relative" style="height: 70vh;">
+                        <div id="excelPreviewLoading" class="d-flex justify-content-center align-items-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading Excel preview...</p>
+                            </div>
+                        </div>
+                        <iframe id="excelPreviewFrame" 
+                                style="width: 100%; height: 100%; border: none; display: none;"
+                                frameborder="0">
+                        </iframe>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -558,6 +650,127 @@
                     });
                 });
             });
+
+            // Handle view attachment button click for Excel preview
+            $(document).on('click', '.view-attachment-btn', function(e) {
+                e.preventDefault();
+                const url = $(this).attr('href');
+                const fileType = $(this).data('file-type');
+                const fileName = $(this).closest('tr').find('td:nth-child(2) span').text();
+                const fileSize = $(this).closest('tr').find('td:nth-child(4)').text() || 'Unknown';
+                
+                // Check if it's an Excel file
+                const isExcelFile = fileType && fileType.includes('excel') || 
+                                   fileName.toLowerCase().includes('.xlsx') || 
+                                   fileName.toLowerCase().includes('.xls');
+                
+                if (isExcelFile) {
+                    // For Excel files, show preview modal
+                    showExcelPreview(url, fileName, fileSize);
+                } else {
+                    // For other files, open in new tab
+                    window.open(url, '_blank');
+                }
+            });
+            
+            // Function to show Excel preview using local server-side conversion
+            function showExcelPreview(fileUrl, fileName, fileSize) {
+                // Update modal content
+                $('#excelFileName').text(fileName);
+                $('#excelFileInfo').text(`File size: ${fileSize}`);
+                
+                // Show loading
+                $('#excelPreviewLoading').show();
+                $('#excelPreviewFrame').hide();
+                
+                // Show modal
+                $('#excelPreviewModal').modal('show');
+                
+                // Debug: Log the URL
+                console.log('File URL:', fileUrl);
+                console.log('File Name:', fileName);
+                console.log('File Size:', fileSize);
+                
+                // Extract attachment ID from URL
+                const urlParts = fileUrl.split('/');
+                const attachmentId = urlParts[urlParts.length - 2]; // Get the ID before 'view'
+                console.log('Attachment ID:', attachmentId);
+                
+                // Create local Excel preview URL
+                const localPreviewUrl = `{{ route('procurement.po.preview-excel', ':attachmentId') }}`.replace(':attachmentId', attachmentId);
+                console.log('Local Preview URL:', localPreviewUrl);
+                
+                // Use local server-side Excel preview
+                const iframe = $('#excelPreviewFrame');
+                iframe.attr('src', localPreviewUrl);
+                
+                // Handle iframe load with timeout
+                let loadTimeout = setTimeout(function() {
+                    console.log('Local Excel preview timeout...');
+                    $('#excelPreviewLoading').hide();
+                    $('#excelPreviewFrame').hide();
+                    $('#excelPreviewLoading').html(`
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+                            <p>Preview timeout. The file might be too large or there's a processing issue.</p>
+                            <p class="small text-muted">Tried local server-side conversion</p>
+                            <button type="button" class="btn btn-primary" onclick="downloadExcelFile('${fileUrl}', '${fileName}')">
+                                <i class="fas fa-download"></i> Download File
+                            </button>
+                            <button type="button" class="btn btn-secondary mt-2" onclick="window.open('${fileUrl}', '_blank')">
+                                <i class="fas fa-external-link-alt"></i> Open in New Tab
+                            </button>
+                        </div>
+                    `);
+                }, 30000); // 30 second timeout for local preview
+                
+                iframe.on('load', function() {
+                    clearTimeout(loadTimeout);
+                    $('#excelPreviewLoading').hide();
+                    $('#excelPreviewFrame').show();
+                });
+                
+                // Handle iframe error
+                iframe.on('error', function() {
+                    clearTimeout(loadTimeout);
+                    console.log('Local Excel preview error...');
+                    $('#excelPreviewLoading').hide();
+                    $('#excelPreviewFrame').hide();
+                    $('#excelPreviewLoading').html(`
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+                            <p>Unable to preview Excel file. Please download the file to view it.</p>
+                            <p class="small text-muted">Server-side conversion failed</p>
+                            <button type="button" class="btn btn-primary" onclick="downloadExcelFile('${fileUrl}', '${fileName}')">
+                                <i class="fas fa-download"></i> Download File
+                            </button>
+                            <button type="button" class="btn btn-secondary mt-2" onclick="window.open('${fileUrl}', '_blank')">
+                                <i class="fas fa-external-link-alt"></i> Open in New Tab
+                            </button>
+                        </div>
+                    `);
+                });
+                
+                // Set up download button
+                $('#downloadExcelBtn').off('click').on('click', function() {
+                    downloadExcelFile(fileUrl, fileName);
+                });
+                
+                // Set up open in new tab button
+                $('#openInNewTabBtn').off('click').on('click', function() {
+                    window.open(fileUrl, '_blank');
+                });
+            }
+            
+            // Function to download Excel file
+            function downloadExcelFile(fileUrl, fileName) {
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         });
     </script>
 @endsection

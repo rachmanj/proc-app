@@ -21,6 +21,10 @@
 
                 {{-- <a href="#" class="nav-link">Search</a> --}}
 
+                @can('view_poservice')
+                    @include('layout.partials.menu.po_service')
+                @endcan
+
                 @can('akses_procurement')
                     @include('layout.partials.menu.procurement')
                 @endcan
@@ -36,6 +40,8 @@
                 @can('akses_admin')
                     @include('layout.partials.menu.admin')
                 @endcan
+
+                
 
             </ul>
         </div>

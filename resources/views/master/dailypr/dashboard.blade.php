@@ -65,7 +65,7 @@
                     </button>
                 </div>
                 <form id="importForm" method="POST" action="{{ route('master.dailypr.import') }}"
-                    enctype="multipart/form-data" onsubmit="return false;">
+                    enctype="multipart/form-data">
                     <div class="modal-body">
                         @csrf
                         <div class="form-group">
@@ -76,7 +76,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="submitBtn">Import</button>
+                        <button type="submit" class="btn btn-primary">Import</button>
                     </div>
                 </form>
             </div>
@@ -137,57 +137,6 @@
                 ]
             });
 
-            // Handle Import
-            $('#submitBtn').on('click', function(e) {
-                e.preventDefault();
-
-                var form = $('#importForm')[0];
-                var formData = new FormData(form);
-
-                Swal.fire({
-                    title: 'Importing...',
-                    text: 'Please wait while we import your data.',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    showConfirmButton: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                $.ajax({
-                    url: form.action,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                            $('#importModal').modal('hide');
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success!',
-                                text: `Successfully imported ${response.rowCount} rows of data.`,
-                                showConfirmButton: true
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    table.ajax.reload();
-                                }
-                            });
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: xhr.responseJSON ? xhr.responseJSON.message :
-                                'An error occurred while importing the data.',
-                            showConfirmButton: true
-                        });
-                    }
-                });
-            });
-
             // Handle Import to PR Table
             $('#importToPRBtn').on('click', function() {
                 Swal.fire({
@@ -214,29 +163,36 @@
                         $.ajax({
                             url: "{{ route('master.dailypr.import-to-pr') }}",
                             type: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
                             success: function(response) {
-                                if (response.success) {
+                                if (response.reload_page) {
+                                    // Reload page to show flash message
+                                    window.location.reload();
+                                } else {
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Success!',
                                         text: response.message,
-                                        showConfirmButton: true
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            table.ajax.reload();
-                                        }
+                                        position: 'center'
+                                    }).then(() => {
+                                        table.ajax.reload();
                                     });
                                 }
                             },
                             error: function(xhr, status, error) {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error!',
-                                    text: xhr.responseJSON ? xhr.responseJSON
-                                        .message :
-                                        'An error occurred while importing the data.',
-                                    showConfirmButton: true
-                                });
+                                if (xhr.responseJSON && xhr.responseJSON.reload_page) {
+                                    // Reload page to show flash message
+                                    window.location.reload();
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred while importing the data.',
+                                        position: 'center'
+                                    });
+                                }
                             }
                         });
                     }

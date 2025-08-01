@@ -68,19 +68,30 @@ class POTempController extends Controller
             'file' => 'required|mimes:xlsx,xls',
         ]);
 
-        DB::beginTransaction();
         try {
+            Log::info('Starting import process');
+            Log::info('File details:', [
+                'name' => $request->file('file')->getClientOriginalName(),
+                'size' => $request->file('file')->getSize(),
+                'mime' => $request->file('file')->getMimeType()
+            ]);
+
+            // Clear existing data
+            POTemp::truncate();
+            Log::info('Cleared existing temporary data');
+
+            // Import new data
             Excel::import(new POTempImport, $request->file('file'));
-            
-            DB::commit();
+            Log::info('Excel import completed');
             
             return response()->json([
                 'success' => true,
                 'message' => 'Data imported successfully',
-                'rowCount' => POTemp::count() // Returns total count after import
+                'rowCount' => POTemp::count()
             ]);
         } catch (\Exception $e) {
-            DB::rollBack();
+            Log::error('Import Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
             return response()->json([
                 'success' => false,
@@ -120,12 +131,23 @@ class POTempController extends Controller
             }
 
             $importedCount = 0;
+            $skippedCount = 0;
             $createdSuppliers = 0;
 
             // Disable foreign key checks
             DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
             foreach ($poGroups as $poGroup) {
+                // Check if PO doc_num already exists in purchase_orders table
+                $existingPO = PurchaseOrder::where('doc_num', $poGroup->po_no)->first();
+                
+                if ($existingPO) {
+                    // Skip this PO as it already exists
+                    $skippedCount++;
+                    Log::info("Skipped PO: {$poGroup->po_no} - already exists");
+                    continue;
+                }
+
                 // Find or create supplier
                 $supplier = Supplier::firstOrCreate(
                     ['code' => $poGroup->vendor_code],
@@ -165,6 +187,8 @@ class POTempController extends Controller
                     ->select([
                         'item_code',
                         'description',
+                        'remark1',
+                        'remark2',
                         'qty',
                         'uom',
                         'unit_price',
@@ -177,6 +201,8 @@ class POTempController extends Controller
                         'purchase_order_id' => $purchaseOrder->id,
                         'item_code' => $detail->item_code,
                         'description' => $detail->description,
+                        'remark1' => $detail->remark1,
+                        'remark2' => $detail->remark2,
                         'qty' => $detail->qty,
                         'uom' => $detail->uom,
                         'unit_price' => $detail->unit_price,
@@ -187,19 +213,33 @@ class POTempController extends Controller
                 $importedCount++;
             }
 
-            if ($importedCount > 0) {
+            // Clear temporary data only if we have successfully imported or skipped
+            if ($importedCount > 0 || $skippedCount > 0) {
                 POTemp::truncate();
             }
 
             // Re-enable foreign key checks
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
+            // Prepare success message
+            $message = "Copy completed: {$importedCount} Purchase Orders copied";
+            if ($skippedCount > 0) {
+                $message .= ", {$skippedCount} skipped (duplicate doc_num)";
+            }
+            if ($createdSuppliers > 0) {
+                $message .= ", {$createdSuppliers} new suppliers created";
+            }
+
+            // Set flash message in session
+            session()->flash('success', $message);
+
             return response()->json([
                 'success' => true,
-                'message' => "Successfully copied {$importedCount} Purchase Orders" . 
-                            ($createdSuppliers > 0 ? " and created {$createdSuppliers} new suppliers" : ""),
-                'count' => $importedCount,
-                'suppliers_created' => $createdSuppliers
+                'message' => $message,
+                'imported' => $importedCount,
+                'skipped' => $skippedCount,
+                'suppliers_created' => $createdSuppliers,
+                'reload_page' => true
             ]);
 
         } catch (\Exception $e) {
@@ -209,9 +249,13 @@ class POTempController extends Controller
             Log::error('Copy Error: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
 
+            // Set flash message in session
+            session()->flash('error', 'Error copying data: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error copying data: ' . $e->getMessage()
+                'message' => 'Error copying data: ' . $e->getMessage(),
+                'reload_page' => true
             ], 500);
         }
     }

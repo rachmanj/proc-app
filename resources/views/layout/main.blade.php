@@ -4,7 +4,13 @@
 @include('layout.partials.head')
 
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    {{-- Include SweetAlert2 globally --}}
+    <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.css') }}">
 </head>
 
 <body class="hold-transition layout-top-nav layout-navbar-fixed">
@@ -12,6 +18,54 @@
 
         @include('layout.partials.navbar')
         @include('sweetalert::alert')
+
+        {{-- Flash Messages --}}
+        @if(session('success') || session('error') || session('warning') || session('info'))
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    @if(session('success'))
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: '{{ session('success') }}',
+                            position: 'center',
+                            showConfirmButton: true,
+                            timer: 5000
+                        });
+                    @endif
+
+                    @if(session('error'))
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: '{{ session('error') }}',
+                            position: 'center',
+                            showConfirmButton: true
+                        });
+                    @endif
+
+                    @if(session('warning'))
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Warning!',
+                            text: '{{ session('warning') }}',
+                            position: 'center',
+                            showConfirmButton: true
+                        });
+                    @endif
+
+                    @if(session('info'))
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Info!',
+                            text: '{{ session('info') }}',
+                            position: 'center',
+                            showConfirmButton: true
+                        });
+                    @endif
+                });
+            </script>
+        @endif
 
         <!-- Content Wrapper. Contains page content -->
         <div class="content-wrapper">
@@ -47,6 +101,8 @@
 
     <!-- REQUIRED SCRIPTS -->
     @include('layout.partials.script')
+
+    @yield('scripts')
 
 </body>
 

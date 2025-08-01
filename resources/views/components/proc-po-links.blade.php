@@ -10,10 +10,10 @@
                     class="btn {{ $page == 'search' ? 'btn-secondary' : 'btn-light' }} btn-sm">
                     <i class="fas fa-search mr-1"></i> Search
                 </a>
-                <a href="{{ route('procurement.po.index', ['page' => 'create']) }}"
+                <!-- <a href="{{ route('procurement.po.index', ['page' => 'create']) }}"
                     class="btn {{ $page == 'create' ? 'btn-secondary' : 'btn-light' }} btn-sm">
                     <i class="fas fa-plus-circle mr-1"></i> Create
-                </a>
+                </a> -->
                 <a href="{{ route('procurement.po.index', ['page' => 'list']) }}"
                     class="btn {{ $page == 'list' ? 'btn-secondary' : 'btn-light' }} btn-sm">
                     <i class="fas fa-list mr-1"></i> List

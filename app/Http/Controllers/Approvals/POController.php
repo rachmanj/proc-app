@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Approvals;
 
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
+use App\Models\PrAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -12,21 +13,69 @@ class POController extends Controller
     public function index()
     {
         $page = request()->query('page', 'dashboard');
+        
+        // Get user's approval levels
+        $userApprovalLevels = auth()->user()->approvers()->with('approvalLevel')->get();
+        
+        $purchaseOrders = PurchaseOrder::with(['supplier', 'approvals.approval_level'])
+            ->where('status', 'submitted')
+            ->whereHas('approvals', function($query) use ($userApprovalLevels) {
+                $query->whereIn('approval_level_id', $userApprovalLevels->pluck('approval_level_id'))
+                    ->where('status', 'pending');
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         $views = [
             'dashboard' => 'approvals.po.dashboard',
             'search' => 'approvals.po.search',
         ];
 
-        return view($views[$page]);
+        return view($views[$page], compact('purchaseOrders'));
     }
 
     public function show(PurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load('approvals');
-        $purchaseOrder->load('attachments');
+        $purchaseOrder->load(['approvals', 'attachments', 'details']);
+        
+        // Auto-cleanup corrupt PO attachments
+        $purchaseOrder->attachments->each(function($attachment) {
+            if (!is_numeric($attachment->file_size) || 
+                empty($attachment->file_path) || 
+                !\Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path)) {
+                \Log::info('Auto-deleting corrupt PO attachment: ' . $attachment->id);
+                $attachment->delete();
+            }
+        });
+        
+        // Get PR attachments based on pr_no with validation and auto-cleanup
+        $prAttachments = PrAttachment::where('pr_no', $purchaseOrder->pr_no)
+            ->whereNotNull('file_path')
+            ->where('file_path', '!=', '')
+            ->get()
+            ->filter(function($attachment) {
+                // Additional validation: check if file size is numeric and file exists
+                $isValid = is_numeric($attachment->file_size) && 
+                          $attachment->file_size > 0 &&
+                          \Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path);
+                
+                // Auto-delete corrupt attachments
+                if (!$isValid) {
+                    \Log::warning('Auto-deleting corrupt PR attachment', [
+                        'attachment_id' => $attachment->id,
+                        'original_name' => $attachment->original_name,
+                        'file_size' => $attachment->file_size,
+                        'file_path' => $attachment->file_path,
+                        'reason' => !is_numeric($attachment->file_size) ? 'Invalid file size' : 
+                                   ($attachment->file_size <= 0 ? 'Zero file size' : 'File not found')
+                    ]);
+                    $attachment->delete();
+                }
+                
+                return $isValid;
+            });
 
-        return view('approvals.po.show', compact('purchaseOrder'));
+        return view('approvals.po.show', compact('purchaseOrder', 'prAttachments'));
     }
 
     public function getAttachments(PurchaseOrder $purchaseOrder)

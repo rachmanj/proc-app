@@ -10,6 +10,8 @@ class PoAttachment extends Model
     protected $fillable = [
         'original_name',
         'file_path',
+        'file_type',
+        'file_size',
         'description'
     ];
 

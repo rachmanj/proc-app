@@ -25,6 +25,8 @@ class POTempImport implements ToModel, WithHeadingRow
             'unit_no' => $row['unit_no'] ?? null,
             'item_code' => $row['item_code'] ?? null,
             'description' => $row['description'] ?? null,
+            'remark1' => $row['remark1'] ?? null,
+            'remark2' => $row['remark2'] ?? null,
             'qty' => $row['qty'] ?? null,
             'po_currency' => $row['po_currency'] ?? null,
             'unit_price' => $row['unit_price'] ?? null,

@@ -17,7 +17,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Purchase Request Details</h3>
                     <div class="card-tools">
-                        <a href="{{ route('procurement.pr.index', ['page' => 'search']) }}" class="btn btn-sm btn-default">
+                        <a href="{{ route('procurement.pr.index', ['page' => 'list']) }}" class="btn btn-sm btn-default">
                             Back to List
                         </a>
                     </div>

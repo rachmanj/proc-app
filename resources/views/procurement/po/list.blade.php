@@ -20,13 +20,15 @@
                     <h3 class="card-title">Purchase Order List</h3>
                 </div>
                 <div class="card-body">
-                    <table id="po-table" class="table table-bordered table-striped">
+                    <table id="po-table" class="table table-bordered table-striped table-sm">
                         <thead>
                             <tr>
                                 <th>Document Number</th>
                                 <th>Document Date</th>
+                                <th>PR Number</th>
                                 <th>Supplier Name</th>
                                 <th>Create Date</th>
+                                <th class="text-center">Day</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -65,6 +67,8 @@
                 responsive: true,
                 autoWidth: false,
                 ajax: '{{ route('procurement.po.data') }}',
+                searching: true,
+                paging: true,
                 columns: [{
                         data: 'doc_num',
                         name: 'doc_num'
@@ -72,6 +76,10 @@
                     {
                         data: 'doc_date',
                         name: 'doc_date'
+                    },
+                    {
+                        data: 'pr_no',
+                        name: 'pr_no'
                     },
                     {
                         data: 'supplier_name',
@@ -82,22 +90,40 @@
                         name: 'create_date'
                     },
                     {
+                        data: 'day',
+                        name: 'day',
+                        className: 'text-center',
+                        type: 'num'
+                    },
+                    {
                         data: 'status',
                         name: 'status',
                         render: function(data) {
-                            return `<span class="badge badge-${data === 'draft' ? 'warning' : 'success'}">${data}</span>`;
+                            return data;
                         }
                     },
                     {
                         data: 'action',
                         name: 'action',
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        className: 'text-center'
                     }
                 ],
                 order: [
-                    [1, 'desc']
-                ]
+                    [5, 'desc'] // Order by Day column (highest first)
+                ],
+                columnDefs: [
+                    {
+                        targets: 5, // Day column
+                        type: 'num' // Ensure numeric sorting
+                    }
+                ],
+                stateSave: false,
+                // Debug: log the order parameter
+                drawCallback: function(settings) {
+                    console.log('DataTables order:', settings.aaSorting);
+                }
             });
 
             // Handle delete button click

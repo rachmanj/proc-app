@@ -10,6 +10,10 @@
                     class="btn {{ $page == 'search' ? 'btn-secondary' : 'btn-light' }} btn-sm">
                     <i class="fas fa-search mr-1"></i> Search
                 </a>
+                <a href="{{ route('procurement.pr.index', ['page' => 'list']) }}"
+                    class="btn {{ $page == 'list' ? 'btn-secondary' : 'btn-light' }} btn-sm">
+                    <i class="fas fa-list mr-1"></i> List
+                </a>
             </div>
         </div>
     </div>

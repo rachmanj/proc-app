@@ -19,12 +19,51 @@ class PurchaseOrder extends Model
         'status' => self::STATUS_DRAFT
     ];
 
-    protected $guarded = [];
+    protected $fillable = [
+        'doc_num',
+        'doc_date', 
+        'create_date',
+        'day',
+        'po_delivery_date',
+        'supplier_id',
+        'po_eta',
+        'pr_no',
+        'unit_no',
+        'po_currency',
+        'total_po_price',
+        'po_with_vat',
+        'project_code',
+        'dept_code',
+        'po_status',
+        'po_delivery_status',
+        'budget_type',
+        'status',
+        'submitted_by'
+    ];
 
     protected $casts = [
         'doc_date' => 'date',
         'create_date' => 'date',
     ];
+
+    protected $appends = ['day_difference'];
+
+    public function getDayDifferenceAttribute()
+    {
+        // If status is approved, stop calculating and return stored day value
+        if ($this->status === self::STATUS_APPROVED) {
+            return $this->day; // Return the stored day value from database
+        }
+
+        if (!$this->create_date) {
+            return null;
+        }
+
+        $createDate = \Carbon\Carbon::parse($this->create_date);
+        $today = \Carbon\Carbon::today();
+        
+        return $createDate->diffInDays($today);
+    }
 
     public function attachments(): BelongsToMany
     {
@@ -184,6 +223,12 @@ class PurchaseOrder extends Model
     }
 
     public function purchaseOrderDetails()
+    {
+        return $this->hasMany(PurchaseOrderDetail::class);
+    }
+
+    // Alias for purchaseOrderDetails for convenience
+    public function details()
     {
         return $this->hasMany(PurchaseOrderDetail::class);
     }

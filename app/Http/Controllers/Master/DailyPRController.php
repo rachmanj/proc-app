@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class DailyPRController extends Controller
 {
@@ -45,16 +46,9 @@ class DailyPRController extends Controller
 
             $rowCount = PrTemp::count(); // Get count of imported rows
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Data imported successfully',
-                'rowCount' => $rowCount
-            ]);
+            return redirect()->back()->with('success', "Successfully imported {$rowCount} rows of data.");
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error importing data: ' . $e->getMessage()
-            ], 500);
+            return redirect()->back()->with('error', 'Error importing data: ' . $e->getMessage());
         }
     }
 
@@ -76,15 +70,7 @@ class DailyPRController extends Controller
 
     public function importToPRTable()
     {
-        $connection = DB::connection();
-
         try {
-            // Disable foreign key checks
-            $connection->statement('SET FOREIGN_KEY_CHECKS=0');
-
-            // Start a new transaction
-            $connection->beginTransaction();
-
             // Get all unique PR temps
             $prGroups = PrTemp::select(
                 'pr_no',
@@ -110,95 +96,104 @@ class DailyPRController extends Controller
             }
 
             $importedCount = 0;
+            $skippedCount = 0;
             $currentPrNo = null;
 
             foreach ($prGroups as $prGroup) {
-                try {
-                    $currentPrNo = $prGroup->pr_no;
+                $currentPrNo = $prGroup->pr_no;
 
-                    // Create Purchase Request
-                    $purchaseRequest = PurchaseRequest::create([
-                        'pr_draft_no' => $prGroup->pr_draft_no,
-                        'pr_no' => $prGroup->pr_no,
-                        'pr_date' => $prGroup->pr_date,
-                        'generated_date' => now(),
-                        'priority' => $prGroup->priority ?? 'NORMAL',
-                        'pr_status' => $prGroup->pr_status ?? 'OPEN',
-                        'closed_status' => 'OPEN',
-                        'pr_rev_no' => $prGroup->pr_rev_no,
-                        'pr_type' => $prGroup->pr_type,
-                        'project_code' => $prGroup->project_code,
-                        'dept_name' => $prGroup->dept_name,
-                        'for_unit' => $prGroup->for_unit,
-                        'hours_meter' => $prGroup->hours_meter,
-                        'required_date' => $prGroup->required_date,
-                        'requestor' => $prGroup->requestor,
-                        'remarks' => $prGroup->remarks
-                    ]);
-
-                    // Get details for this PR
-                    $prDetails = PrTemp::where('pr_no', $prGroup->pr_no)
-                        ->select([
-                            'item_code',
-                            'item_name',
-                            'quantity',
-                            'uom',
-                            'line_remarks'
-                        ])
-                        ->get();
-
-                    foreach ($prDetails as $detail) {
-                        $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
-
-                        PurchaseRequestDetail::create([
-                            'purchase_request_id' => $purchaseRequest->id,
-                            'item_code' => $detail->item_code,
-                            'item_name' => $detail->item_name,
-                            'quantity' => $quantity,
-                            'uom' => $detail->uom,
-                            'open_qty' => $quantity,
-                            'line_remarks' => $detail->line_remarks ?? '',
-                            'status' => 'OPEN'
-                        ]);
-                    }
-
-                    $importedCount++;
-                } catch (\Exception $e) {
-                    Log::error("Error processing PR {$currentPrNo}: " . $e->getMessage());
-                    throw $e;
+                // Check if PR number already exists in purchase_requests table
+                $existingPR = PurchaseRequest::where('pr_no', $prGroup->pr_no)->first();
+                
+                if ($existingPR) {
+                    // Skip this PR as it already exists
+                    $skippedCount++;
+                    Log::info("Skipped PR: {$prGroup->pr_no} - already exists");
+                    continue;
                 }
+
+                // Create Purchase Request
+                $purchaseRequest = PurchaseRequest::create([
+                    'pr_draft_no' => $prGroup->pr_draft_no,
+                    'pr_no' => $prGroup->pr_no,
+                    'pr_date' => $prGroup->pr_date,
+                    'generated_date' => now(),
+                    'priority' => $prGroup->priority ?? 'NORMAL',
+                    'pr_status' => $prGroup->pr_status ?? 'OPEN',
+                    'closed_status' => 'OPEN',
+                    'pr_rev_no' => $prGroup->pr_rev_no,
+                    'pr_type' => $prGroup->pr_type,
+                    'project_code' => $prGroup->project_code,
+                    'dept_name' => $prGroup->dept_name,
+                    'for_unit' => $prGroup->for_unit,
+                    'hours_meter' => $prGroup->hours_meter,
+                    'required_date' => $prGroup->required_date,
+                    'requestor' => $prGroup->requestor,
+                    'remarks' => $prGroup->remarks
+                ]);
+
+                // Get details for this PR
+                $prDetails = PrTemp::where('pr_no', $prGroup->pr_no)
+                    ->select([
+                        'item_code',
+                        'item_name',
+                        'quantity',
+                        'uom',
+                        'line_remarks'
+                    ])
+                    ->get();
+
+                foreach ($prDetails as $detail) {
+                    $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
+
+                    PurchaseRequestDetail::create([
+                        'purchase_request_id' => $purchaseRequest->id,
+                        'item_code' => $detail->item_code,
+                        'item_name' => $detail->item_name,
+                        'quantity' => $quantity,
+                        'uom' => $detail->uom,
+                        'open_qty' => $quantity,
+                        'line_remarks' => $detail->line_remarks ?? '',
+                        'status' => 'OPEN'
+                    ]);
+                }
+
+                $importedCount++;
             }
 
-            if ($importedCount > 0) {
+            // Clear temporary data only if we have successfully imported
+            if ($importedCount > 0 || $skippedCount > 0) {
                 PrTemp::truncate();
             }
 
-            // Commit the transaction
-            $connection->commit();
+            // Prepare success message
+            $message = "Import completed: {$importedCount} Purchase Requests imported";
+            if ($skippedCount > 0) {
+                $message .= ", {$skippedCount} skipped (duplicate PR numbers)";
+            }
 
-            // Re-enable foreign key checks
-            $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+            // Set flash message in session
+            session()->flash('success', $message);
 
             return response()->json([
                 'success' => true,
-                'message' => "Successfully imported {$importedCount} Purchase Requests",
-                'count' => $importedCount
+                'message' => $message,
+                'imported' => $importedCount,
+                'skipped' => $skippedCount,
+                'reload_page' => true
             ]);
+
         } catch (\Exception $e) {
-            // Rollback the transaction if it's still active
-            if ($connection->transactionLevel() > 0) {
-                $connection->rollBack();
-            }
-
-            // Re-enable foreign key checks
-            $connection->statement('SET FOREIGN_KEY_CHECKS=1');
-
             Log::error('Import Error: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
 
+            // Set flash message in session
+            session()->flash('error', 'Error importing data: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error importing data: ' . $e->getMessage()
+                'message' => 'Error importing data: ' . $e->getMessage(),
+                'reload_page' => true
             ], 500);
         }
     }
