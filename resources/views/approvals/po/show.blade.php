@@ -115,8 +115,16 @@
                                             <thead class="table-light">
                                                 <tr>
                                                     <th class="text-center" style="width: 60px">No.</th>
-                                                    <th>Item Code @if($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))<small class="text-muted">(<span class="text-primary">CONSIGNMENT</span>)</small>@endif</th>
-                                                    <th>Description @if($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))<small class="text-muted">(<span class="text-primary">CONSIGNMENT</span>)</small>@endif</th>
+                                                    <th>Item Code @if ($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))
+                                                            <small class="text-muted">(<span
+                                                                    class="text-primary">CONSIGNMENT</span>)</small>
+                                                        @endif
+                                                    </th>
+                                                    <th>Description @if ($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))
+                                                            <small class="text-muted">(<span
+                                                                    class="text-primary">CONSIGNMENT</span>)</small>
+                                                        @endif
+                                                    </th>
                                                     <th class="text-end" style="width: 100px">Qty</th>
                                                     <th style="width: 100px">UOM</th>
                                                     <th class="text-end" style="width: 150px">Unit Price</th>
@@ -128,14 +136,14 @@
                                                     <tr>
                                                         <td class="text-center">{{ $index + 1 }}</td>
                                                         <td>
-                                                            @if($detail->item_code === 'CONSIGNMENT')
+                                                            @if ($detail->item_code === 'CONSIGNMENT')
                                                                 {{ $detail->remark1 ?? $detail->item_code }}
                                                             @else
                                                                 {{ $detail->item_code }}
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            @if($detail->item_code === 'CONSIGNMENT')
+                                                            @if ($detail->item_code === 'CONSIGNMENT')
                                                                 {{ $detail->remark2 ?? $detail->description }}
                                                             @else
                                                                 {{ $detail->description }}
@@ -202,17 +210,19 @@
                                                 </thead>
                                                 <tbody>
                                                     @forelse($prAttachments->filter(function($attachment) {
-                                                        return $attachment && 
-                                                               is_numeric($attachment->file_size) && 
-                                                               !empty($attachment->file_path) && 
-                                                               \Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path);
-                                                    }) as $index => $attachment)
+                                                                    return $attachment &&
+                                                                           is_numeric($attachment->file_size) &&
+                                                                           !empty($attachment->file_path);
+                                                                }) as $index => $attachment)
                                                         <tr>
                                                             <td class="text-center">{{ $index + 1 }}</td>
                                                             <td class="text-center">
                                                                 @php
                                                                     $extension = strtolower(
-                                                                        pathinfo($attachment->file_path, PATHINFO_EXTENSION),
+                                                                        pathinfo(
+                                                                            $attachment->file_path,
+                                                                            PATHINFO_EXTENSION,
+                                                                        ),
                                                                     );
                                                                     $isImage = in_array($extension, [
                                                                         'jpg',
@@ -235,40 +245,37 @@
                                                                 @endif
                                                             </td>
                                                             <td>
-                                                                <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                                                <span class="text-truncate d-inline-block"
+                                                                    style="max-width: 300px;"
                                                                     title="{{ $attachment->original_name }}">
                                                                     {{ $attachment->original_name }}
                                                                 </span>
                                                             </td>
                                                             <td>
-                                                                @if($attachment->keterangan)
-                                                                    <span class="text-muted">{{ $attachment->keterangan }}</span>
+                                                                @if ($attachment->keterangan)
+                                                                    <span
+                                                                        class="text-muted">{{ $attachment->keterangan }}</span>
                                                                 @else
                                                                     <span class="text-muted">-</span>
                                                                 @endif
                                                             </td>
-                                                        <td>
-                                                            @if(is_numeric($attachment->file_size) && $attachment->file_size > 0)
-                                                                {{ number_format($attachment->file_size / 1024, 2) }} KB
-                                                            @else
-                                                                <span class="text-danger">Invalid size</span>
-                                                            @endif
-                                                        </td>
+                                                            <td>
+                                                                @if (is_numeric($attachment->file_size) && $attachment->file_size > 0)
+                                                                    {{ number_format($attachment->file_size / 1024, 2) }}
+                                                                    KB
+                                                                @else
+                                                                    <span class="text-danger">Invalid size</span>
+                                                                @endif
+                                                            </td>
                                                             <td class="text-center">
                                                                 <div class="d-flex justify-content-center gap-3">
-                                                                    @if(\Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path))
-                                                                    <a href="{{ route('procurement.pr.view-attachment', $attachment->id) }}" 
-                                                                            class="btn btn-info btn-sm view-attachment-btn" 
+                                                                    <a href="{{ route('procurement.pr.view-attachment', $attachment->id) }}"
+                                                                        class="btn btn-info btn-sm view-attachment-btn"
                                                                         target="_blank"
-                                                                            data-file-type="{{ $attachment->file_type }}"
+                                                                        data-file-type="{{ $attachment->file_type }}"
                                                                         title="View File">
                                                                         <i class="fas fa-eye"></i>
                                                                     </a>
-                                                                    @else
-                                                                        <span class="text-danger small">
-                                                                            <i class="fas fa-exclamation-triangle"></i> File Missing
-                                                                        </span>
-                                                                    @endif
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -308,17 +315,19 @@
                                                 </thead>
                                                 <tbody>
                                                     @forelse($purchaseOrder->attachments->filter(function($attachment) {
-                                                        return $attachment && 
-                                                               is_numeric($attachment->file_size) && 
-                                                               !empty($attachment->file_path) && 
-                                                               \Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path);
-                                                    }) as $index => $attachment)
+                                                                    return $attachment &&
+                                                                           is_numeric($attachment->file_size) &&
+                                                                           !empty($attachment->file_path);
+                                                                }) as $index => $attachment)
                                                         <tr>
                                                             <td class="text-center">{{ $index + 1 }}</td>
                                                             <td class="text-center">
                                                                 @php
                                                                     $extension = strtolower(
-                                                                        pathinfo($attachment->file_path, PATHINFO_EXTENSION),
+                                                                        pathinfo(
+                                                                            $attachment->file_path,
+                                                                            PATHINFO_EXTENSION,
+                                                                        ),
                                                                     );
                                                                     $isImage = in_array($extension, [
                                                                         'jpg',
@@ -341,40 +350,37 @@
                                                                 @endif
                                                             </td>
                                                             <td>
-                                                                <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                                                <span class="text-truncate d-inline-block"
+                                                                    style="max-width: 300px;"
                                                                     title="{{ $attachment->original_name }}">
                                                                     {{ $attachment->original_name }}
                                                                 </span>
                                                             </td>
                                                             <td>
-                                                                @if($attachment->description)
-                                                                    <span class="text-muted">{{ $attachment->description }}</span>
+                                                                @if ($attachment->description)
+                                                                    <span
+                                                                        class="text-muted">{{ $attachment->description }}</span>
                                                                 @else
                                                                     <span class="text-muted">-</span>
                                                                 @endif
                                                             </td>
                                                             <td>
-                                                                @if(is_numeric($attachment->file_size) && $attachment->file_size > 0)
-                                                                    {{ number_format($attachment->file_size / 1024, 2) }} KB
+                                                                @if (is_numeric($attachment->file_size) && $attachment->file_size > 0)
+                                                                    {{ number_format($attachment->file_size / 1024, 2) }}
+                                                                    KB
                                                                 @else
                                                                     <span class="text-danger">Invalid size</span>
                                                                 @endif
                                                             </td>
                                                             <td class="text-center">
                                                                 <div class="d-flex justify-content-center gap-3">
-                                                                    @if(\Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path))
-                                                                        <a href="{{ route('procurement.po.view-attachment', ['attachmentId' => $attachment->id]) }}"
-                                                                            class="btn btn-info btn-sm view-attachment-btn" 
+                                                                    <a href="{{ route('procurement.po.view-attachment', ['attachmentId' => $attachment->id]) }}"
+                                                                        class="btn btn-info btn-sm view-attachment-btn"
                                                                         target="_blank"
-                                                                            data-file-type="{{ $attachment->file_type }}"
+                                                                        data-file-type="{{ $attachment->file_type }}"
                                                                         title="View File">
                                                                         <i class="fas fa-eye"></i>
                                                                     </a>
-                                                                    @else
-                                                                        <span class="text-danger small">
-                                                                            <i class="fas fa-exclamation-triangle"></i> File Missing
-                                                                        </span>
-                                                                    @endif
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -626,7 +632,8 @@
 
             // Handle Reject button click
             $('.reject-btn').on('click', function() {
-                const approvalId = $(this).data('approval-id');
+                // We need the purchase order ID, not the approval ID
+                const purchaseOrderId = {{ $purchaseOrder->id }};
                 Swal.fire({
                     title: 'Reject Purchase Order',
                     html: `
@@ -652,7 +659,7 @@
                         }
                         return $.ajax({
                             url: `{{ route('procurement.po.reject', ':id') }}`.replace(
-                                ':id', approvalId),
+                                ':id', purchaseOrderId),
                             method: 'POST',
                             data: {
                                 _token: '{{ csrf_token() }}',
@@ -682,7 +689,8 @@
 
             // Handle Revise button click
             $('.revise-btn').on('click', function() {
-                const approvalId = $(this).data('approval-id');
+                // We need the purchase order ID, not the approval ID
+                const purchaseOrderId = {{ $purchaseOrder->id }};
                 Swal.fire({
                     title: 'Request Revision',
                     html: `
@@ -708,7 +716,7 @@
                         }
                         return $.ajax({
                             url: `{{ route('procurement.po.revise', ':id') }}`.replace(
-                                ':id', approvalId),
+                                ':id', purchaseOrderId),
                             method: 'POST',
                             data: {
                                 _token: '{{ csrf_token() }}',
@@ -743,17 +751,17 @@
             const fileType = $(this).data('file-type');
             const fileName = $(this).closest('tr').find('td:nth-child(3) span').text();
             let fileSize = $(this).closest('tr').find('td:nth-child(5)').text() || 'Unknown';
-            
+
             // Clean up file size if it's invalid
             if (fileSize === '-' || fileSize === 'Invalid size' || fileSize.trim() === '') {
                 fileSize = 'Unknown';
             }
-            
+
             // Check if it's an Excel file
-            const isExcelFile = fileType && fileType.includes('excel') || 
-                               fileName.toLowerCase().includes('.xlsx') || 
-                               fileName.toLowerCase().includes('.xls');
-            
+            const isExcelFile = fileType && fileType.includes('excel') ||
+                fileName.toLowerCase().includes('.xlsx') ||
+                fileName.toLowerCase().includes('.xls');
+
             // Additional validation for corrupt attachments
             if (fileSize === 'Unknown' || fileSize === 'Invalid size') {
                 Swal.fire({
@@ -764,7 +772,7 @@
                 });
                 return;
             }
-            
+
             if (isExcelFile) {
                 // For Excel files, show preview modal
                 showExcelPreview(url, fileName, fileSize);
@@ -773,45 +781,47 @@
                 window.open(url, '_blank');
             }
         });
-        
+
         // Function to show Excel preview using local server-side conversion
         function showExcelPreview(fileUrl, fileName, fileSize) {
             // Update modal content
             $('#excelFileName').text(fileName);
             $('#excelFileInfo').text(`File size: ${fileSize}`);
-            
+
             // Show loading
             $('#excelPreviewLoading').show();
             $('#excelPreviewFrame').hide();
-            
+
             // Show modal
             $('#excelPreviewModal').modal('show');
-            
+
             // Debug: Log the URL
             console.log('File URL:', fileUrl);
             console.log('File Name:', fileName);
             console.log('File Size:', fileSize);
-            
+
             // Extract attachment ID from URL
             const urlParts = fileUrl.split('/');
             const attachmentId = urlParts[urlParts.length - 2]; // Get the ID before 'view'
             console.log('Attachment ID:', attachmentId);
-            
+
             // Create local Excel preview URL based on attachment type
             let localPreviewUrl;
             if (fileUrl.includes('/pr/attachments/')) {
                 // PR attachment - use PR preview route
-                localPreviewUrl = `{{ route('procurement.pr.preview-excel', ':attachmentId') }}`.replace(':attachmentId', attachmentId);
+                localPreviewUrl = `{{ route('procurement.pr.preview-excel', ':attachmentId') }}`.replace(':attachmentId',
+                    attachmentId);
             } else {
                 // PO attachment - use PO preview route
-                localPreviewUrl = `{{ route('procurement.po.preview-excel', ':attachmentId') }}`.replace(':attachmentId', attachmentId);
+                localPreviewUrl = `{{ route('procurement.po.preview-excel', ':attachmentId') }}`.replace(':attachmentId',
+                    attachmentId);
             }
             console.log('Local Preview URL:', localPreviewUrl);
-            
+
             // Use local server-side Excel preview
             const iframe = $('#excelPreviewFrame');
             iframe.attr('src', localPreviewUrl);
-            
+
             // Handle iframe load with timeout
             let loadTimeout = setTimeout(function() {
                 console.log('Local Excel preview timeout...');
@@ -831,13 +841,13 @@
                     </div>
                 `);
             }, 30000); // 30 second timeout for local preview
-            
+
             iframe.on('load', function() {
                 clearTimeout(loadTimeout);
                 $('#excelPreviewLoading').hide();
                 $('#excelPreviewFrame').show();
             });
-            
+
             // Handle iframe error
             iframe.on('error', function() {
                 clearTimeout(loadTimeout);
@@ -858,18 +868,18 @@
                     </div>
                 `);
             });
-            
+
             // Set up download button
             $('#downloadExcelBtn').off('click').on('click', function() {
                 downloadExcelFile(fileUrl, fileName);
             });
-            
+
             // Set up open in new tab button
             $('#openInNewTabBtn').off('click').on('click', function() {
                 window.open(fileUrl, '_blank');
             });
         }
-        
+
         // Function to download Excel file
         function downloadExcelFile(fileUrl, fileName) {
             const link = document.createElement('a');
@@ -882,7 +892,8 @@
     </script>
 
     <!-- Excel Preview Modal -->
-    <div class="modal fade" id="excelPreviewModal" tabindex="-1" role="dialog" aria-labelledby="excelPreviewModalLabel" aria-hidden="true">
+    <div class="modal fade" id="excelPreviewModal" tabindex="-1" role="dialog"
+        aria-labelledby="excelPreviewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -919,9 +930,8 @@
                                 <p class="mt-2">Loading Excel preview...</p>
                             </div>
                         </div>
-                        <iframe id="excelPreviewFrame" 
-                                style="width: 100%; height: 100%; border: none; display: none;"
-                                frameborder="0">
+                        <iframe id="excelPreviewFrame" style="width: 100%; height: 100%; border: none; display: none;"
+                            frameborder="0">
                         </iframe>
                     </div>
                 </div>

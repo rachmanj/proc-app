@@ -21,7 +21,7 @@ class PurchaseOrder extends Model
 
     protected $fillable = [
         'doc_num',
-        'doc_date', 
+        'doc_date',
         'create_date',
         'day',
         'po_delivery_date',
@@ -61,7 +61,7 @@ class PurchaseOrder extends Model
 
         $createDate = \Carbon\Carbon::parse($this->create_date);
         $today = \Carbon\Carbon::today();
-        
+
         return $createDate->diffInDays($today);
     }
 
@@ -190,7 +190,7 @@ class PurchaseOrder extends Model
     public function reject($approverId, $notes = null)
     {
         $currentApproval = $this->approvals()->where('status', 'pending')->first();
-        
+
         if (!$currentApproval) {
             return false;
         }
@@ -212,6 +212,42 @@ class PurchaseOrder extends Model
         ]);
 
         $this->status = self::STATUS_REJECTED;
+        $this->save();
+
+        return true;
+    }
+
+    public function revise($approverId, $notes = null)
+    {
+        $currentApproval = $this->approvals()->where('status', 'pending')->first();
+
+        if (!$currentApproval) {
+            return false;
+        }
+
+        // Get the approver record for this user and level
+        $approver = Approver::where('user_id', $approverId)
+            ->where('approval_level_id', $currentApproval->approval_level_id)
+            ->first();
+
+        if (!$approver) {
+            throw new \Exception('User is not authorized to request revision for this level');
+        }
+
+        $currentApproval->update([
+            'status' => 'revision', // Using 'revision' instead of 'revision_requested' to match the ENUM
+            'approver_id' => $approver->id,
+            'notes' => $notes,
+            'approved_at' => now()
+        ]);
+
+        // Cancel any other pending approvals for this PO
+        $this->approvals()
+            ->where('id', '!=', $currentApproval->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'cancelled']);
+
+        $this->status = self::STATUS_REVISION;
         $this->save();
 
         return true;

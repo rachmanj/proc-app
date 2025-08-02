@@ -6,6 +6,8 @@ use App\Models\PurchaseOrder;
 use App\Models\ApprovalLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\PurchaseOrderApproval;
 use App\Models\Approver;
 
@@ -31,7 +33,7 @@ class PurchaseOrderApprovalController extends Controller
         try {
             // Update status and submitted_by
             $purchaseOrder->status = 'submitted';
-            $purchaseOrder->submitted_by = auth()->user()->name;
+            $purchaseOrder->submitted_by = Auth::user() ? Auth::user()->name : 'System';
             $purchaseOrder->save();
             Log::info('PO status updated to submitted');
 
@@ -74,8 +76,8 @@ class PurchaseOrderApprovalController extends Controller
                 throw new \Exception('Purchase Order not found');
             }
 
-            $purchaseOrder->approve(auth()->user()->id, $request->notes);
-            
+            $purchaseOrder->approve(Auth::id(), $request->notes);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Purchase Order has been approved'
@@ -100,13 +102,45 @@ class PurchaseOrderApprovalController extends Controller
         ]);
 
         try {
-            $purchaseOrder->reject(auth()->user()->id, $request->notes);
-            
+            // Begin transaction to ensure all updates happen together
+            DB::beginTransaction();
+
+            // Get the current user's approval levels
+            $user = Auth::user();
+            $userApproverLevels = Approver::where('user_id', $user->id)
+                ->pluck('approval_level_id');
+
+            // Get the current pending approval for this PO
+            $currentApproval = $purchaseOrder->approvals()
+                ->where('status', 'pending')
+                ->whereIn('approval_level_id', $userApproverLevels)
+                ->first();
+
+            if (!$currentApproval) {
+                throw new \Exception('No pending approval found for your approval level');
+            }
+
+            // Now call the reject method with the current user ID
+            $purchaseOrder->reject(Auth::id(), $request->notes);
+
+            // Commit the transaction
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Purchase Order has been rejected'
             ]);
         } catch (\Exception $e) {
+            // Rollback transaction on error
+            if (isset($DB) && DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            Log::error('Error in rejection request: ' . $e->getMessage(), [
+                'po_id' => $purchaseOrder->id,
+                'user_id' => Auth::id()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error rejecting purchase order: ' . $e->getMessage()
@@ -121,39 +155,47 @@ class PurchaseOrderApprovalController extends Controller
         ]);
 
         try {
-            $purchaseOrder->status = PurchaseOrder::STATUS_REVISION;
-            $purchaseOrder->save();
+            // Begin transaction to ensure all updates happen together
+            DB::beginTransaction();
 
-            // Add revision note to approvals
+            // Get the current user's approval levels
+            $user = Auth::user();
+            $userApproverLevels = Approver::where('user_id', $user->id)
+                ->pluck('approval_level_id');
+
+            // Get the current pending approval for this PO
             $currentApproval = $purchaseOrder->approvals()
                 ->where('status', 'pending')
+                ->whereIn('approval_level_id', $userApproverLevels)
                 ->first();
 
-            if ($currentApproval) {
-                $approver = Approver::where('user_id', auth()->id())
-                    ->where('approval_level_id', $currentApproval->approval_level_id)
-                    ->first();
-
-                if (!$approver) {
-                    throw new \Exception('User is not authorized for this action');
-                }
-
-                $currentApproval->update([
-                    'status' => 'revision_requested',
-                    'notes' => $request->notes,
-                    'approver_id' => $approver->id
-                ]);
+            if (!$currentApproval) {
+                throw new \Exception('No pending approval found for your approval level');
             }
+
+            // Use the model's revise method which handles all the logic
+            $purchaseOrder->revise(Auth::id(), $request->notes);
+
+            // Commit the transaction
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Revision has been requested'
             ]);
         } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+
+            Log::error('Error in revision request: ' . $e->getMessage(), [
+                'po_id' => $purchaseOrder->id,
+                'user_id' => Auth::id()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error requesting revision: ' . $e->getMessage()
             ], 500);
         }
     }
-} 
+}
