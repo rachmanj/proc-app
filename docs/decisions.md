@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-07-08
+**Last Updated**: 2025-08-03
 
 # Technical Decision Records
 
@@ -29,6 +29,45 @@ Decision: [Title] - [YYYY-MM-DD]
 ---
 
 ## Recent Decisions
+
+Decision: Implement DataTables for Item Price Search - 2025-08-03
+
+**Context**: The consignment item price search page needed enhanced functionality for users to efficiently find, sort, and export item price data. The standard Laravel pagination was limiting user experience.
+
+**Options Considered**:
+
+1. **Option A**: Custom JavaScript filtering and sorting
+
+    - ✅ Pros: Complete control over implementation, no additional libraries
+    - ❌ Cons: Time-consuming development, maintenance burden, limited features
+
+2. **Option B**: DataTables integration
+
+    - ✅ Pros: Rich feature set (sorting, filtering, export), responsive design, well-documented
+    - ❌ Cons: Additional JavaScript dependencies, learning curve for customization
+
+3. **Option C**: Server-side filtering with AJAX
+    - ✅ Pros: Better performance for large datasets, reduced client-side processing
+    - ❌ Cons: Complex implementation, more backend code, less immediate user feedback
+
+**Decision**: Implemented Option B - DataTables integration for the item price search functionality
+
+**Rationale**:
+
+-   Provides immediate improvement to user experience with minimal development effort
+-   Built-in export functionality (CSV, Excel, PDF) meets business requirements
+-   Responsive design works well across different devices
+-   Existing AdminLTE theme already includes DataTables, reducing integration effort
+
+**Implementation**:
+
+-   Added DataTables CSS and JS resources to the search.blade.php view
+-   Modified the controller to return all results instead of paginated data
+-   Implemented client-side filtering with form integration
+-   Added part number search capability for more comprehensive filtering
+-   Configured responsive display and export options
+
+**Review Date**: 2025-11-03 (3 months)
 
 Decision: Display PO Attachments Without Local File Existence Check - 2025-07-08
 

@@ -33,6 +33,10 @@
                     @include('layout.partials.menu.approvals')
                 @endcan
 
+                @can('access_consignment')
+                    @include('layout.partials.menu.consignment')
+                @endcan
+
                 @can('akses_master')
                     @include('layout.partials.menu.master')
                 @endcan
@@ -40,8 +44,6 @@
                 @can('akses_admin')
                     @include('layout.partials.menu.admin')
                 @endcan
-
-                
 
             </ul>
         </div>

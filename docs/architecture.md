@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-07-08
+Last Updated: 2025-08-03
 
 ## Architecture Documentation Guidelines
 
@@ -114,7 +114,19 @@ A comprehensive procurement management system built with Laravel 11, designed to
 
 -   Import PRs from temporary tables
 -   Import POs from temporary tables
+-   Import item prices from Excel files
 -   Bulk data processing
+
+### 8. Consignment & Item Price Tracking
+
+-   Item price management with history tracking
+-   Warehouse management
+-   Excel import for bulk item price updates
+-   Price history visualization
+-   Advanced search capabilities with DataTables integration
+-   Flexible filtering by item code, description, part number, brand, supplier, warehouse
+-   Export functionality (CSV, Excel, PDF, print)
+-   Responsive data display with column visibility controls
 
 ## Database Schema
 
@@ -126,6 +138,7 @@ The database is organized into several key areas:
 -   `departments` - Department information
 -   `projects` - Project data
 -   `suppliers` - Supplier information
+-   `warehouses` - Warehouse information for consignment
 
 ### Procurement Tables
 
@@ -135,6 +148,12 @@ The database is organized into several key areas:
 -   `purchase_order_details` - PO line items
 -   `po_temps` - Temporary PO data for imports
 -   `pr_temps` - Temporary PR data for imports
+
+### Consignment Tables
+
+-   `item_prices` - Item price information
+-   `item_price_histories` - Historical price records
+-   `item_price_imports` - Temporary data for Excel imports
 
 ### Approval System
 
@@ -152,7 +171,7 @@ The database is organized into several key areas:
 ### Authorization Tables
 
 -   `roles` - User roles
--   `permissions` - System permissions
+-   `permissions` - System permissions (including access_consignment, upload_consignment, crud_consignment, search_consignment)
 -   `model_has_roles` - User-role relationships
 -   `model_has_permissions` - Direct user-permission relationships
 -   `role_has_permissions` - Role-permission relationships
@@ -199,6 +218,22 @@ graph TD
     B -->|Revision| G[Sent Back for Revision]
     C -->|Revision| G
     D -->|Revision| G
+```
+
+### Consignment Item Price Flow
+
+```mermaid
+graph TD
+    A[Manual Entry] --> C[Create Item Price]
+    B[Excel Import] --> C
+    C --> D[Store Price History]
+    D --> E[Price Available for Search]
+    E --> H[Advanced Search with DataTables]
+    H --> I[Export Data]
+    H --> J[Interactive Filtering]
+    B --> F[Validate Import Data]
+    F -->|Valid| C
+    F -->|Invalid| G[Show Error Report]
 ```
 
 ## Security Implementation

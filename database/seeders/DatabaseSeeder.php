@@ -63,13 +63,14 @@ class DatabaseSeeder extends Seeder
         $procDepartmentId = DB::table('departments')->where('akronim', 'PROC')->value('id');
         $itDepartmentId = DB::table('departments')->where('akronim', 'IT')->value('id');
 
-        
-        
+
+
         $this->call([
             ProjectsTableSeeder::class,
             DepartmentsTableSeeder::class,
             RolePermissionSeeder::class,
             ApprovalLevelSeeder::class,
+            WarehouseSeeder::class,
         ]);
     }
 }

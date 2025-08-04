@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('test', [TestController::class, 'index']);
 
-    
+
 
     require __DIR__ . '/admin.php';
     require __DIR__ . '/procurement.php';
@@ -38,9 +38,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/approval.php';
     require __DIR__ . '/suppliers.php';
     require __DIR__ . '/po_service.php';
-    
-
-    
+    require __DIR__ . '/consignment.php';
 });
-
-

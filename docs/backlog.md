@@ -1,5 +1,5 @@
 **Purpose**: Future features and improvements prioritized by value
-**Last Updated**: 2025-07-08
+**Last Updated**: 2025-08-03
 
 # Feature Backlog
 
@@ -56,6 +56,8 @@
 -   Optimize database queries in approval listing pages - Impact: Medium
 -   Refactor attachment handling into dedicated service - Effort: Small
 -   Implement caching for frequently accessed master data - Impact: Medium
+-   Server-side processing for DataTables on large datasets - Impact: High
+-   Standardize DataTables implementation across all listing pages - Effort: Medium
 
 ### Infrastructure
 

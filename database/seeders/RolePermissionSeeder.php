@@ -31,6 +31,10 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'akses_proc_po', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'akses_proc_pr', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'view_poservice', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'access_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'upload_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'crud_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'search_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
         ];
 
         DB::table('permissions')->insert($permissions);
@@ -52,6 +56,10 @@ class RolePermissionSeeder extends Seeder
         $aksesReportPermissionId = DB::table('permissions')->where('name', 'akses_report')->first()->id;
         $aksesProcPrPermissionId = DB::table('permissions')->where('name', 'akses_proc_pr')->first()->id;
         $viewPoservicePermissionId = DB::table('permissions')->where('name', 'view_poservice')->first()->id;
+        $accessConsignmentPermissionId = DB::table('permissions')->where('name', 'access_consignment')->first()->id;
+        $uploadConsignmentPermissionId = DB::table('permissions')->where('name', 'upload_consignment')->first()->id;
+        $crudConsignmentPermissionId = DB::table('permissions')->where('name', 'crud_consignment')->first()->id;
+        $searchConsignmentPermissionId = DB::table('permissions')->where('name', 'search_consignment')->first()->id;
         // assign permission to roles
         $rolePermissions = [
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesAdminPermissionId],
@@ -64,6 +72,10 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $superadminRoleId, 'permission_id' => $viewPoservicePermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $accessConsignmentPermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $uploadConsignmentPermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $crudConsignmentPermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $searchConsignmentPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesAdminPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesPermissionPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesUserPermissionId],
@@ -72,17 +84,27 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $adminRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesReportPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $viewPoservicePermissionId],
+            ['role_id' => $adminRoleId, 'permission_id' => $accessConsignmentPermissionId],
+            ['role_id' => $adminRoleId, 'permission_id' => $uploadConsignmentPermissionId],
+            ['role_id' => $adminRoleId, 'permission_id' => $crudConsignmentPermissionId],
+            ['role_id' => $adminRoleId, 'permission_id' => $searchConsignmentPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesMasterPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $viewPoservicePermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $accessConsignmentPermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $uploadConsignmentPermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $crudConsignmentPermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $searchConsignmentPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesReportPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $viewPoservicePermissionId],
+            ['role_id' => $buyerRoleId, 'permission_id' => $accessConsignmentPermissionId],
+            ['role_id' => $buyerRoleId, 'permission_id' => $searchConsignmentPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesApprovalPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $directorRoleId, 'permission_id' => $aksesReportPermissionId],
@@ -117,7 +139,7 @@ class RolePermissionSeeder extends Seeder
                 'model_id' => $userProcMgr->id,
                 'model_type' => 'App\Models\User',
             ]);
-            }
+        }
 
         $userDirector = DB::table('users')->where('username', 'director')->first();
         if ($userDirector) {

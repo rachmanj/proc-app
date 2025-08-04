@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2025-07-08
+**Last Updated**: 2025-08-03
 
 ## Memory Maintenance Guidelines
 
@@ -26,6 +26,20 @@
 ---
 
 ## Project Memory Entries
+
+### DataTables Implementation for Item Price Search (2025-08-03) ✅ COMPLETE
+
+-   **Challenge**: Need for advanced search, sorting, and export capabilities in consignment item price search
+-   **Solution**: Implemented DataTables with client-side processing and integrated with existing search form
+-   **Key Learning**: DataTables column indices must be updated when adding new columns to maintain proper filtering
+-   **Impact**: Significantly improved user experience with interactive filtering, sorting, and data export options
+
+### Consignment Middleware Fix (2025-08-02) ✅ COMPLETE
+
+-   **Challenge**: "Target class [permission] does not exist" error when accessing /consignment page
+-   **Solution**: Fixed middleware namespace in bootstrap/app.php from "Middlewares" (plural) to "Middleware" (singular)
+-   **Key Learning**: Laravel middleware registration requires exact namespace matching
+-   **Impact**: Enabled access to the consignment feature with proper permission checks
 
 ### PO Attachment Display Fix (2025-07-08) ✅ COMPLETE
 
