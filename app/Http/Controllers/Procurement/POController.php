@@ -410,7 +410,35 @@ class POController extends Controller
         // Load the purchase order details relationship
         $purchaseOrder->load('details');
         
-        return view('procurement.po.show', compact('purchaseOrder'));
+        // Get PR attachments based on pr_no with validation
+        $prAttachments = collect();
+        
+        if ($purchaseOrder->pr_no) {
+            $prAttachments = PrAttachment::where('pr_no', $purchaseOrder->pr_no)
+                ->whereNotNull('file_path')
+                ->where('file_path', '!=', '')
+                ->get()
+                ->filter(function ($attachment) {
+                    // For development environment, don't check if file exists in storage
+                    // This allows us to display attachments even if files are only on production
+                    $isValid = is_numeric($attachment->file_size) &&
+                        $attachment->file_size > 0;
+
+                    // Log corrupt attachments but don't delete due to foreign key constraints
+                    if (!$isValid) {
+                        Log::warning('Found corrupt PR attachment (skipping)', [
+                            'attachment_id' => $attachment->id,
+                            'original_name' => $attachment->original_name,
+                            'file_path' => $attachment->file_path,
+                            'reason' => !is_numeric($attachment->file_size) ? 'Invalid file size' : 'Zero file size'
+                        ]);
+                    }
+
+                    return $isValid;
+                });
+        }
+        
+        return view('procurement.po.show', compact('purchaseOrder', 'prAttachments'));
     }
 
     public function updateAttachment(Request $request, $attachmentId)

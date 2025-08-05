@@ -182,82 +182,165 @@
                         {{-- Attachments Tab --}}
                         <div class="tab-pane fade" id="attachments" role="tabpanel">
                             <div class="p-4">
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center" style="width: 50px">No</th>
-                                                <th class="text-center" style="width: 100px">Preview</th>
-                                                <th style="width: 300px">File Name</th>
-                                                <th style="width: 200px">Remarks</th>
-                                                <th class="text-center" style="width: 100px">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse ($purchaseOrder->attachments as $index => $attachment)
+                                {{-- PO Attachments Section --}}
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-paperclip me-2"></i>Purchase Order Attachments
+                                    </h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm">
+                                            <thead>
                                                 <tr>
-                                                    <td class="text-center">{{ $index + 1 }}</td>
-                                                    <td class="text-center">
-                                                        @php
-                                                            $extension = strtolower(
-                                                                pathinfo($attachment->file_path, PATHINFO_EXTENSION),
-                                                            );
-                                                            $isImage = in_array($extension, [
-                                                                'jpg',
-                                                                'jpeg',
-                                                                'png',
-                                                                'gif',
-                                                            ]);
-                                                        @endphp
+                                                    <th class="text-center" style="width: 50px">No</th>
+                                                    <th class="text-center" style="width: 100px">Preview</th>
+                                                    <th style="width: 300px">File Name</th>
+                                                    <th style="width: 200px">Remarks</th>
+                                                    <th class="text-center" style="width: 100px">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse ($purchaseOrder->attachments as $index => $attachment)
+                                                    <tr>
+                                                        <td class="text-center">{{ $index + 1 }}</td>
+                                                        <td class="text-center">
+                                                            @php
+                                                                $extension = strtolower(
+                                                                    pathinfo($attachment->file_path, PATHINFO_EXTENSION),
+                                                                );
+                                                                $isImage = in_array($extension, [
+                                                                    'jpg',
+                                                                    'jpeg',
+                                                                    'png',
+                                                                    'gif',
+                                                                ]);
+                                                            @endphp
 
-                                                        @if ($isImage)
-                                                            <img src="{{ asset('storage/' . $attachment->file_path) }}"
-                                                                class="img-fluid" style="max-height: 50px;"
-                                                                alt="Attachment preview">
-                                                        @elseif (in_array(strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)), ['xlsx', 'xls']))
-                                                            <i class="fas fa-file-excel fa-2x text-success"></i>
-                                                        @elseif (strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)) === 'pdf')
-                                                            <i class="fas fa-file-pdf fa-2x text-danger"></i>
-                                                        @else
-                                                            <i class="fas fa-file fa-2x text-secondary"></i>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <span class="text-truncate d-inline-block" style="max-width: 300px;" 
-                                                            title="{{ $attachment->original_name }}">
-                                                            {{ $attachment->original_name }}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        @if($attachment->description)
-                                                            <span class="text-muted">{{ $attachment->description }}</span>
-                                                        @else
-                                                            <span class="text-muted">-</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <a href="{{ route('procurement.po.view-attachment', ['attachmentId' => $attachment->id]) }}"
-                                                            class="btn btn-info btn-sm view-attachment-btn" 
-                                                            target="_blank"
-                                                            data-file-type="{{ $attachment->file_type }}"
-                                                            title="View File">
-                                                            <i class="fas fa-eye"></i>
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="5" class="text-center py-3">
-                                                        <div class="text-muted">
-                                                            <i class="fas fa-info-circle me-1"></i>
-                                                            No attachments found
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
+                                                            @if ($isImage)
+                                                                <img src="{{ asset('storage/' . $attachment->file_path) }}"
+                                                                    class="img-fluid" style="max-height: 50px;"
+                                                                    alt="Attachment preview">
+                                                            @elseif (in_array(strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)), ['xlsx', 'xls']))
+                                                                <i class="fas fa-file-excel fa-2x text-success"></i>
+                                                            @elseif (strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)) === 'pdf')
+                                                                <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                                            @else
+                                                                <i class="fas fa-file fa-2x text-secondary"></i>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                                                title="{{ $attachment->original_name }}">
+                                                                {{ $attachment->original_name }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            @if($attachment->description)
+                                                                <span class="text-muted">{{ $attachment->description }}</span>
+                                                            @else
+                                                                <span class="text-muted">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a href="{{ route('procurement.po.view-attachment', ['attachmentId' => $attachment->id]) }}"
+                                                                class="btn btn-info btn-sm view-attachment-btn" 
+                                                                target="_blank"
+                                                                data-file-type="{{ $attachment->file_type }}"
+                                                                title="View File">
+                                                                <i class="fas fa-eye"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="text-center py-3">
+                                                            <div class="text-muted">
+                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                No PO attachments found
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
+
+                                {{-- PR Attachments Section --}}
+                                @if($purchaseOrder->pr_no && $prAttachments->count() > 0)
+                                <div class="mb-4">
+                                    <h6 class="text-success mb-3">
+                                        <i class="fas fa-file-alt me-2"></i>Purchase Request Attachments (PR: {{ $purchaseOrder->pr_no }})
+                                    </h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-center" style="width: 50px">No</th>
+                                                    <th class="text-center" style="width: 100px">Preview</th>
+                                                    <th style="width: 300px">File Name</th>
+                                                    <th style="width: 200px">Remarks</th>
+                                                    <th class="text-center" style="width: 100px">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($prAttachments as $index => $attachment)
+                                                    <tr>
+                                                        <td class="text-center">{{ $index + 1 }}</td>
+                                                        <td class="text-center">
+                                                            @php
+                                                                $extension = strtolower(
+                                                                    pathinfo($attachment->file_path, PATHINFO_EXTENSION),
+                                                                );
+                                                                $isImage = in_array($extension, [
+                                                                    'jpg',
+                                                                    'jpeg',
+                                                                    'png',
+                                                                    'gif',
+                                                                ]);
+                                                            @endphp
+
+                                                            @if ($isImage)
+                                                                <img src="{{ asset('storage/' . $attachment->file_path) }}"
+                                                                    class="img-fluid" style="max-height: 50px;"
+                                                                    alt="PR Attachment preview">
+                                                            @elseif (in_array(strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)), ['xlsx', 'xls']))
+                                                                <i class="fas fa-file-excel fa-2x text-success"></i>
+                                                            @elseif (strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)) === 'pdf')
+                                                                <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                                            @else
+                                                                <i class="fas fa-file fa-2x text-secondary"></i>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                                                title="{{ $attachment->original_name }}">
+                                                                {{ $attachment->original_name }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            @if($attachment->description)
+                                                                <span class="text-muted">{{ $attachment->description }}</span>
+                                                            @elseif($attachment->keterangan)
+                                                                <span class="text-muted">{{ $attachment->keterangan }}</span>
+                                                            @else
+                                                                <span class="text-muted">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <a href="{{ route('procurement.pr.view-attachment', ['attachment' => $attachment->id]) }}"
+                                                                class="btn btn-success btn-sm" 
+                                                                target="_blank"
+                                                                title="View PR File">
+                                                                <i class="fas fa-eye"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
 
