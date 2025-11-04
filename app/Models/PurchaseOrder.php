@@ -6,9 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Log;
 use App\Models\Approver;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class PurchaseOrder extends Model
 {
+    use LogsActivity;
+
     const STATUS_DRAFT = 'draft';
     const STATUS_SUBMITTED = 'submitted';
     const STATUS_APPROVED = 'approved';
@@ -18,6 +22,15 @@ class PurchaseOrder extends Model
     protected $attributes = [
         'status' => self::STATUS_DRAFT
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['status', 'doc_num', 'total_po_price', 'po_with_vat', 'submitted_by'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Purchase Order {$this->doc_num} has been {$eventName}");
+    }
 
     protected $fillable = [
         'doc_num',

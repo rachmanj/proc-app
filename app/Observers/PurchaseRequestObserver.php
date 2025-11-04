@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\PurchaseRequest;
+use App\Notifications\PrCreatedNotification;
 use Carbon\Carbon;
 
 class PurchaseRequestObserver
@@ -12,7 +13,10 @@ class PurchaseRequestObserver
      */
     public function created(PurchaseRequest $purchaseRequest): void
     {
-        //
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user) {
+            $user->notify(new PrCreatedNotification($purchaseRequest));
+        }
     }
 
     /**

@@ -16,8 +16,11 @@
             <!-- Left navbar links -->
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Dashboard</a>
+                    <a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a>
                 </li>
+
+                {{-- Reports Menu --}}
+                @include('layout.partials.menu.reports')
 
                 {{-- <a href="#" class="nav-link">Search</a> --}}
 
@@ -50,6 +53,25 @@
 
         <!-- Right navbar links -->
         <ul class="order-1 order-md-3 navbar-nav navbar-no-expand ml-auto">
+            <!-- Notifications Dropdown -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#" id="notificationDropdown">
+                    <i class="far fa-bell"></i>
+                    <span class="badge badge-warning navbar-badge" id="notificationBadge">0</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" id="notificationMenu">
+                    <span class="dropdown-item dropdown-header" id="notificationHeader">0 Notifications</span>
+                    <div class="dropdown-divider"></div>
+                    <div id="notificationList">
+                        <div class="dropdown-item text-center">
+                            <span>Loading notifications...</span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item dropdown-footer" id="markAllReadBtn">Mark All as Read</a>
+                </div>
+            </li>
+
             <li class="nav-item dropdown">
                 <a id="dropdownPayreq" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
                     class="nav-link dropdown-toggle">{{ auth()->user()->name }} ({{ auth()->user()->project }})</a>

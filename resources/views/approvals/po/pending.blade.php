@@ -21,11 +21,27 @@
                         <i class="fas fa-clock mr-1"></i>
                         Purchase Orders Requiring Your Approval
                     </h3>
+                    <div class="card-tools">
+                        <div class="btn-group" id="bulk-actions" style="display: none;">
+                            <button type="button" class="btn btn-sm btn-success" id="bulk-approve-btn">
+                                <i class="fas fa-check"></i> Approve Selected
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" id="bulk-reject-btn">
+                                <i class="fas fa-times"></i> Reject Selected
+                            </button>
+                            <button type="button" class="btn btn-sm btn-info" id="bulk-export-btn">
+                                <i class="fas fa-file-excel"></i> Export Selected
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table class="table table-bordered table-striped" id="pending-table">
                         <thead>
                             <tr>
+                                <th width="30">
+                                    <input type="checkbox" id="select-all">
+                                </th>
                                 <th>PO Number</th>
                                 <th>Date</th>
                                 <th>Supplier</th>
@@ -63,13 +79,20 @@
 
     <script>
         $(function() {
-            $('#pending-table').DataTable({
+            var table = $('#pending-table').DataTable({
                 processing: true,
                 serverSide: true,
                 responsive: true,
                 autoWidth: false,
                 ajax: "{{ route('approvals.po.pending-data') }}",
                 columns: [{
+                        data: 'checkbox',
+                        name: 'checkbox',
+                        orderable: false,
+                        searchable: false,
+                        width: '30px'
+                    },
+                    {
                         data: 'doc_num',
                         name: 'doc_num',
                         searchable: true
@@ -107,9 +130,141 @@
                     }
                 ],
                 order: [
-                    [1, 'desc']
+                    [2, 'desc']
                 ]
             });
+
+            // Select all checkbox
+            $('#select-all').on('change', function() {
+                $('input[type="checkbox"][name="po_ids[]"]').prop('checked', this.checked);
+                updateBulkActions();
+            });
+
+            // Individual checkbox change
+            $(document).on('change', 'input[type="checkbox"][name="po_ids[]"]', function() {
+                updateBulkActions();
+                var allChecked = $('input[type="checkbox"][name="po_ids[]"]:checked').length === $('input[type="checkbox"][name="po_ids[]"]').length;
+                $('#select-all').prop('checked', allChecked);
+            });
+
+            function updateBulkActions() {
+                var selectedCount = $('input[type="checkbox"][name="po_ids[]"]:checked').length;
+                if (selectedCount > 0) {
+                    $('#bulk-actions').show();
+                } else {
+                    $('#bulk-actions').hide();
+                }
+            }
+
+            // Bulk approve
+            $('#bulk-approve-btn').on('click', function() {
+                var selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    Swal.fire('Error', 'Please select at least one PO', 'error');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Approve Selected POs?',
+                    text: `You are about to approve ${selectedIds.length} PO(s)`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Approve'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        bulkApprove(selectedIds);
+                    }
+                });
+            });
+
+            // Bulk reject
+            $('#bulk-reject-btn').on('click', function() {
+                var selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    Swal.fire('Error', 'Please select at least one PO', 'error');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Reject Selected POs?',
+                    text: `You are about to reject ${selectedIds.length} PO(s)`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    input: 'textarea',
+                    inputPlaceholder: 'Enter rejection reason (optional)',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Reject'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        bulkReject(selectedIds, result.value || '');
+                    }
+                });
+            });
+
+            // Bulk export
+            $('#bulk-export-btn').on('click', function() {
+                var selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    Swal.fire('Error', 'Please select at least one PO', 'error');
+                    return;
+                }
+
+                window.location.href = "{{ route('approvals.po.bulk-export') }}?ids=" + selectedIds.join(',');
+            });
+
+            function getSelectedIds() {
+                var ids = [];
+                $('input[type="checkbox"][name="po_ids[]"]:checked').each(function() {
+                    ids.push($(this).val());
+                });
+                return ids;
+            }
+
+            function bulkApprove(ids) {
+                $.ajax({
+                    url: "{{ route('approvals.po.bulk-approve') }}",
+                    method: 'POST',
+                    data: {
+                        ids: ids,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire('Success', response.message || 'POs approved successfully', 'success');
+                        table.ajax.reload();
+                        $('#select-all').prop('checked', false);
+                        updateBulkActions();
+                    },
+                    error: function(xhr) {
+                        var message = xhr.responseJSON?.message || 'Error approving POs';
+                        Swal.fire('Error', message, 'error');
+                    }
+                });
+            }
+
+            function bulkReject(ids, notes) {
+                $.ajax({
+                    url: "{{ route('approvals.po.bulk-reject') }}",
+                    method: 'POST',
+                    data: {
+                        ids: ids,
+                        notes: notes,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire('Success', response.message || 'POs rejected successfully', 'success');
+                        table.ajax.reload();
+                        $('#select-all').prop('checked', false);
+                        updateBulkActions();
+                    },
+                    error: function(xhr) {
+                        var message = xhr.responseJSON?.message || 'Error rejecting POs';
+                        Swal.fire('Error', message, 'error');
+                    }
+                });
+            }
         });
     </script>
 @endsection

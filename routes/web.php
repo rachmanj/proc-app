@@ -24,11 +24,27 @@ Route::middleware('guest')->group(function () {
 
 // middleware('auth') means that the user must be authenticated to access the route
 Route::middleware('auth')->group(function () {
-    Route::get('/', [DashboardController::class, 'index']);
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::get('test', [TestController::class, 'index']);
+
+    Route::prefix('api/dashboard')->name('api.dashboard.')->group(function () {
+        Route::get('/metrics', [DashboardController::class, 'metrics'])->name('metrics');
+        Route::get('/charts/pr-status', [DashboardController::class, 'prStatusChart'])->name('charts.pr-status');
+        Route::get('/charts/po-trend', [DashboardController::class, 'poTrendChart'])->name('charts.po-trend');
+        Route::get('/charts/approval-time', [DashboardController::class, 'approvalTimeChart'])->name('charts.approval-time');
+        Route::get('/charts/top-suppliers', [DashboardController::class, 'topSuppliersChart'])->name('charts.top-suppliers');
+        Route::get('/charts/department-pr', [DashboardController::class, 'departmentPrChart'])->name('charts.department-pr');
+        Route::get('/activity', [DashboardController::class, 'activity'])->name('activity');
+    });
+
+    Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    });
 
 
 
@@ -39,4 +55,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/suppliers.php';
     require __DIR__ . '/po_service.php';
     require __DIR__ . '/consignment.php';
+    require __DIR__ . '/reports.php';
 });

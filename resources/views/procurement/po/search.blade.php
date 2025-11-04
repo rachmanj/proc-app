@@ -16,8 +16,34 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Search Purchase Order</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
+                    <!-- Quick Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="mb-2"><strong>Quick Filters:</strong></label>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary quick-filter" data-filter="my-pos">
+                                    <i class="fas fa-user"></i> My POs
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning quick-filter" data-filter="pending">
+                                    <i class="fas fa-clock"></i> Pending Approval
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success quick-filter" data-filter="approved">
+                                    <i class="fas fa-check"></i> Approved
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info quick-filter" data-filter="this-month">
+                                    <i class="fas fa-calendar"></i> This Month
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <form id="search-form">
                         <div class="row">
                             <div class="col-md-4 mb-3">
@@ -61,9 +87,8 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label for="status">Status</label>
-                                <select class="form-control select2" id="status" name="status">
-                                    <option value="">Select Status</option>
+                                <label for="status">Status <small>(Multiple selection)</small></label>
+                                <select class="form-control select2" id="status" name="status[]" multiple="multiple" data-placeholder="Select Status">
                                     @foreach ($statuses as $status)
                                         <option value="{{ $status }}">{{ ucfirst($status) }}</option>
                                     @endforeach
@@ -71,20 +96,27 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label for="date_from">Date From</label>
-                                <input type="date" class="form-control" id="date_from" name="date_from">
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label for="date_to">Date To</label>
-                                <input type="date" class="form-control" id="date_to" name="date_to">
+                                <label for="date_range">Date Range</label>
+                                <input type="text" class="form-control" id="date_range" name="date_range" placeholder="Select date range">
+                                <input type="hidden" id="date_from" name="date_from">
+                                <input type="hidden" id="date_to" name="date_to">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-12">
-                                <button type="submit" class="btn btn-primary">Search</button>
-                                <button type="reset" class="btn btn-secondary">Reset</button>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <button type="reset" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                                <button type="button" class="btn btn-sm btn-info" id="save-filter-btn">
+                                    <i class="fas fa-save"></i> Save Filter
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success" id="load-filter-btn">
+                                    <i class="fas fa-folder-open"></i> Load Saved Filter
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -126,6 +158,8 @@
     <!-- Select2 -->
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    <!-- Date Range Picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
 @endsection
 
 @section('scripts')
@@ -134,9 +168,20 @@
     <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/jszip/jszip.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/pdfmake/pdfmake.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/pdfmake/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.html5.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.print.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/datatables-buttons/js/buttons.colVis.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
     <!-- Select2 -->
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
+    <!-- Date Range Picker -->
+    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -146,10 +191,205 @@
                 width: '100%'
             });
 
+            // Initialize Date Range Picker
+            $('#date_range').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Clear',
+                    format: 'YYYY-MM-DD'
+                },
+                ranges: {
+                    'Today': [moment(), moment()],
+                    'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                    'This Month': [moment().startOf('month'), moment().endOf('month')],
+                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                }
+            });
+
+            $('#date_range').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' / ' + picker.endDate.format('YYYY-MM-DD'));
+                $('#date_from').val(picker.startDate.format('YYYY-MM-DD'));
+                $('#date_to').val(picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            $('#date_range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+                $('#date_from').val('');
+                $('#date_to').val('');
+            });
+
+            // Quick Filters
+            $('.quick-filter').on('click', function() {
+                const filter = $(this).data('filter');
+                
+                // Reset all filters first
+                $('#search-form')[0].reset();
+                $('.select2').val(null).trigger('change');
+                
+                switch(filter) {
+                    case 'my-pos':
+                        // Filter by current user - this would need backend support
+                        break;
+                    case 'pending':
+                        $('#status').val(['submitted']).trigger('change');
+                        break;
+                    case 'approved':
+                        $('#status').val(['approved']).trigger('change');
+                        break;
+                    case 'this-month':
+                        const startOfMonth = moment().startOf('month');
+                        const endOfMonth = moment().endOf('month');
+                        $('#date_range').data('daterangepicker').setStartDate(startOfMonth);
+                        $('#date_range').data('daterangepicker').setEndDate(endOfMonth);
+                        $('#date_range').val(startOfMonth.format('YYYY-MM-DD') + ' / ' + endOfMonth.format('YYYY-MM-DD'));
+                        $('#date_from').val(startOfMonth.format('YYYY-MM-DD'));
+                        $('#date_to').val(endOfMonth.format('YYYY-MM-DD'));
+                        break;
+                }
+                
+                // Trigger search
+                if (table) {
+                    table.draw();
+                }
+            });
+
+            // Save Filter Preset
+            $('#save-filter-btn').on('click', function() {
+                const filterName = prompt('Enter a name for this filter preset:');
+                if (filterName) {
+                    const filterData = {
+                        doc_num: $('#doc_num').val(),
+                        pr_num: $('#pr_num').val(),
+                        supplier_name: $('#supplier_name').val(),
+                        unit_no: $('#unit_no').val(),
+                        project_code: $('#project_code').val(),
+                        status: $('#status').val(),
+                        date_from: $('#date_from').val(),
+                        date_to: $('#date_to').val()
+                    };
+                    
+                    const savedFilters = JSON.parse(localStorage.getItem('po_filter_presets') || '{}');
+                    savedFilters[filterName] = filterData;
+                    localStorage.setItem('po_filter_presets', JSON.stringify(savedFilters));
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Filter Saved',
+                        text: 'Filter preset "' + filterName + '" has been saved successfully!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            });
+
+            // Load Filter Preset
+            $('#load-filter-btn').on('click', function() {
+                const savedFilters = JSON.parse(localStorage.getItem('po_filter_presets') || '{}');
+                const filterNames = Object.keys(savedFilters);
+                
+                if (filterNames.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'No Saved Filters',
+                        text: 'You don\'t have any saved filter presets yet.'
+                    });
+                    return;
+                }
+                
+                // Create options HTML
+                let optionsHtml = '<select class="form-control" id="preset-select">';
+                filterNames.forEach(function(name) {
+                    optionsHtml += '<option value="' + name + '">' + name + '</option>';
+                });
+                optionsHtml += '</select>';
+                
+                Swal.fire({
+                    title: 'Load Filter Preset',
+                    html: optionsHtml,
+                    showCancelButton: true,
+                    confirmButtonText: 'Load',
+                    cancelButtonText: 'Cancel',
+                    didOpen: function() {
+                        $('#preset-select').focus();
+                    },
+                    preConfirm: function() {
+                        const selectedName = $('#preset-select').val();
+                        return selectedName;
+                    }
+                }).then(function(result) {
+                    if (result.isConfirmed && result.value) {
+                        const filterData = savedFilters[result.value];
+                        
+                        // Apply filter data
+                        $('#doc_num').val(filterData.doc_num || '');
+                        $('#pr_num').val(filterData.pr_num || '');
+                        $('#supplier_name').val(filterData.supplier_name || '').trigger('change');
+                        $('#unit_no').val(filterData.unit_no || '').trigger('change');
+                        $('#project_code').val(filterData.project_code || '').trigger('change');
+                        $('#status').val(filterData.status || []).trigger('change');
+                        
+                        if (filterData.date_from && filterData.date_to) {
+                            $('#date_range').data('daterangepicker').setStartDate(moment(filterData.date_from));
+                            $('#date_range').data('daterangepicker').setEndDate(moment(filterData.date_to));
+                            $('#date_range').val(filterData.date_from + ' / ' + filterData.date_to);
+                            $('#date_from').val(filterData.date_from);
+                            $('#date_to').val(filterData.date_to);
+                        }
+                        
+                        // Trigger search
+                        if (table) {
+                            table.draw();
+                        }
+                    }
+                });
+            });
+
             // Initialize DataTable
             let table = $('#po-table').DataTable({
                 processing: true,
                 serverSide: true,
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-sm btn-success',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-sm btn-danger',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> CSV',
+                        className: 'btn btn-sm btn-info',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print',
+                        className: 'btn btn-sm btn-secondary',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fas fa-eye"></i> Columns',
+                        className: 'btn btn-sm btn-primary'
+                    }
+                ],
                 ajax: {
                     url: '{{ route('procurement.po.search') }}',
                     data: function(d) {
@@ -158,7 +398,7 @@
                         d.supplier_name = $('#supplier_name').val();
                         d.unit_no = $('#unit_no').val();
                         d.project_code = $('#project_code').val();
-                        d.status = $('#status').val();
+                        d.status = $('#status').val(); // Array for multi-select
                         d.date_from = $('#date_from').val();
                         d.date_to = $('#date_to').val();
                     },
@@ -215,7 +455,49 @@
                 ],
                 order: [
                     [1, 'desc']
-                ]
+                ],
+                language: {
+                    processing: "Processing...",
+                    search: "Search:",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                initComplete: function() {
+                    // Append buttons container
+                    table.buttons().container().appendTo('#po-table_wrapper .col-md-6:eq(0)');
+                    
+                    // Load saved column visibility preferences
+                    const savedCols = localStorage.getItem('po_table_cols');
+                    if (savedCols) {
+                        try {
+                            const hiddenCols = JSON.parse(savedCols);
+                            hiddenCols.forEach(function(colIndex) {
+                                table.column(colIndex).visible(false);
+                            });
+                        } catch(e) {
+                            console.error('Error loading column preferences:', e);
+                        }
+                    }
+                }
+            });
+
+            // Save column visibility preferences
+            table.on('column-visibility', function(e, settings, column, state) {
+                const hiddenCols = [];
+                table.columns().every(function() {
+                    if (!this.visible()) {
+                        hiddenCols.push(this.index());
+                    }
+                });
+                localStorage.setItem('po_table_cols', JSON.stringify(hiddenCols));
             });
 
             // Show initial message

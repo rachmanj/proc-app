@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\PurchaseOrderApproval;
 use App\Models\Approver;
+use App\Notifications\PoPendingApprovalNotification;
+use App\Notifications\ApprovalStatusChangedNotification;
 
 class PurchaseOrderApprovalController extends Controller
 {
@@ -51,6 +53,19 @@ class PurchaseOrderApprovalController extends Controller
             ]);
             Log::info('Approval record created');
 
+            $approvers = Approver::where('approval_level_id', $firstLevel->id)
+                ->with('user')
+                ->get();
+
+            foreach ($approvers as $approver) {
+                if ($approver->user) {
+                    $approver->user->notify(new PoPendingApprovalNotification(
+                        $purchaseOrder,
+                        $firstLevel->name
+                    ));
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Purchase Order has been submitted for approval'
@@ -76,7 +91,46 @@ class PurchaseOrderApprovalController extends Controller
                 throw new \Exception('Purchase Order not found');
             }
 
+            $currentApproval = $purchaseOrder->approvals()
+                ->where('status', 'pending')
+                ->with('approval_level')
+                ->first();
+
             $purchaseOrder->approve(Auth::id(), $request->notes);
+
+            $purchaseOrder->refresh();
+            $approver = Auth::user();
+
+            if ($purchaseOrder->status === 'approved') {
+                $creator = \App\Models\User::where('name', $purchaseOrder->submitted_by)->first();
+                if ($creator) {
+                    $creator->notify(new ApprovalStatusChangedNotification(
+                        $purchaseOrder,
+                        'approved',
+                        $approver->name
+                    ));
+                }
+            } else {
+                $nextApproval = $purchaseOrder->approvals()
+                    ->where('status', 'pending')
+                    ->with('approval_level')
+                    ->first();
+
+                if ($nextApproval) {
+                    $nextApprovers = Approver::where('approval_level_id', $nextApproval->approval_level_id)
+                        ->with('user')
+                        ->get();
+
+                    foreach ($nextApprovers as $nextApprover) {
+                        if ($nextApprover->user) {
+                            $nextApprover->user->notify(new PoPendingApprovalNotification(
+                                $purchaseOrder,
+                                $nextApproval->approval_level->name
+                            ));
+                        }
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -122,6 +176,17 @@ class PurchaseOrderApprovalController extends Controller
 
             // Now call the reject method with the current user ID
             $purchaseOrder->reject(Auth::id(), $request->notes);
+            $purchaseOrder->refresh();
+
+            $approver = Auth::user();
+            $creator = \App\Models\User::where('name', $purchaseOrder->submitted_by)->first();
+            if ($creator) {
+                $creator->notify(new ApprovalStatusChangedNotification(
+                    $purchaseOrder,
+                    'rejected',
+                    $approver->name
+                ));
+            }
 
             // Commit the transaction
             DB::commit();
@@ -175,6 +240,17 @@ class PurchaseOrderApprovalController extends Controller
 
             // Use the model's revise method which handles all the logic
             $purchaseOrder->revise(Auth::id(), $request->notes);
+            $purchaseOrder->refresh();
+
+            $approver = Auth::user();
+            $creator = \App\Models\User::where('name', $purchaseOrder->submitted_by)->first();
+            if ($creator) {
+                $creator->notify(new ApprovalStatusChangedNotification(
+                    $purchaseOrder,
+                    'revision',
+                    $approver->name
+                ));
+            }
 
             // Commit the transaction
             DB::commit();

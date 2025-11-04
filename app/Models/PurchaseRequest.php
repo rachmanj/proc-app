@@ -4,9 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class PurchaseRequest extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'pr_draft_no',
         'pr_no',
@@ -34,6 +38,15 @@ class PurchaseRequest extends Model
     ];
 
     protected $appends = ['day_difference'];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['pr_status', 'pr_no', 'pr_draft_no', 'requestor', 'dept_name'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Purchase Request " . ($this->pr_no ?? $this->pr_draft_no) . " has been {$eventName}");
+    }
 
     public function getDayDifferenceAttribute()
     {

@@ -116,6 +116,8 @@ class PRController extends Controller
             'pr_type' => $request->pr_type,
             'project_code' => $request->project_code,
             'for_unit' => $request->for_unit,
+            'date_from' => $request->date_from,
+            'date_to' => $request->date_to,
         ]);
 
         $query = PurchaseRequest::query();
@@ -133,8 +135,13 @@ class PRController extends Controller
         if ($request->priority) {
             $query->where('priority', $request->priority);
         }
-        if ($request->pr_status) {
-            $query->where('pr_status', $request->pr_status);
+        // Handle multi-select status
+        if ($request->filled('pr_status')) {
+            if (is_array($request->pr_status)) {
+                $query->whereIn('pr_status', $request->pr_status);
+            } else {
+                $query->where('pr_status', $request->pr_status);
+            }
         }
         if ($request->pr_type) {
             $query->where('pr_type', $request->pr_type);
@@ -144,6 +151,13 @@ class PRController extends Controller
         }
         if ($request->for_unit) {
             $query->where('for_unit', $request->for_unit);
+        }
+        // Date range filters
+        if ($request->date_from) {
+            $query->whereDate('generated_date', '>=', $request->date_from);
+        }
+        if ($request->date_to) {
+            $query->whereDate('generated_date', '<=', $request->date_to);
         }
 
         return DataTables::of($query)

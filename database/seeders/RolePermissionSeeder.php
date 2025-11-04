@@ -91,6 +91,7 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesMasterPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesApprovalPermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $aksesReportPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPoPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcPrPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $viewPoservicePermissionId],

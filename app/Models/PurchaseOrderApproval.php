@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class PurchaseOrderApproval extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'purchase_order_id',
         'approver_id',
@@ -34,5 +38,14 @@ class PurchaseOrderApproval extends Model
     public function approval_level()
     {
         return $this->belongsTo(ApprovalLevel::class, 'approval_level_id');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['status', 'notes', 'approved_at'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Purchase Order Approval has been {$eventName}");
     }
 }

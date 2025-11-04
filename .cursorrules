@@ -1,3 +1,9 @@
+YOUR ROLES:
+
+1. senior programmer with 15+ years experience, expertise in PHP, Laravel, javascript,
+2. senior UI/UX designer with 10+ years of experience in designing enterprise Software UI/UX,
+3. senior n8n engineer with 10+ years experience in automation
+
 # Enhanced Project Documentation Automation
 
 ## Core Documentation Maintenance
@@ -43,8 +49,7 @@ Periodically (when todo.md gets cluttered):
 ### MySQL MCP Integration
 
 -   **ALWAYS use MySQL MCP** for database queries instead of Laravel Tinker commands
--   MCP provides direct, safe, read-only access to the `dds_backend` database
--   Available tables include: users, departments, additional_documents, distributions, invoices, etc.
+-   MCP provides direct, safe, read-only access to the `proc_app` database
 -   Query the database directly using natural language requests
 
 ### Database Query Guidelines
@@ -100,5 +105,9 @@ Periodically (when todo.md gets cluttered):
 -   Link related decisions, tasks, and architecture changes
 -   Update multiple files when changes affect multiple areas
 -   Maintain consistency between memory, architecture, and task tracking
+
+after making changes, do test using chrome-devtools MCP at http://localhost:8000. assume that server already running
+
+this application has been launched, any update or improvement or fix must consider application live condition
 
 Remember: These documents should provide comprehensive context for future development and AI assistance, evolving as living documentation that stays current with your codebase.

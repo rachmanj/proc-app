@@ -354,8 +354,13 @@ class POController extends Controller
                     $query->where('project_code', $request->project_code);
                 }
 
-                if ($request->status) {
-                    $query->where('status', $request->status);
+                // Handle multi-select status
+                if ($request->filled('status')) {
+                    if (is_array($request->status)) {
+                        $query->whereIn('status', $request->status);
+                    } else {
+                        $query->where('status', $request->status);
+                    }
                 }
 
                 if ($request->date_from) {

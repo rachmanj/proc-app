@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-08-03
+Last Updated: 2025-01-27
 
 ## Architecture Documentation Guidelines
 
@@ -48,76 +48,237 @@ This document describes the CURRENT WORKING STATE of the application architectur
 
 ## Project Overview
 
-A comprehensive procurement management system built with Laravel 11, designed to streamline the purchase request and purchase order workflow with multi-level approval processes.
+A comprehensive procurement management system built with Laravel 11, designed to streamline the purchase request and purchase order workflow with multi-level approval processes, including consignment item price tracking and PO Service management.
 
 ## Technology Stack
 
--   **Backend Framework**: Laravel 11
+### Backend
+
+-   **Framework**: Laravel 11
 -   **PHP Version**: 8.2+
 -   **Database**: MySQL
--   **Frontend**:
-    -   AdminLTE 3 (Bootstrap 4-based admin template)
-    -   jQuery
-    -   DataTables
-    -   SweetAlert2
--   **Authentication**: Laravel's built-in authentication
--   **Authorization**: Spatie Laravel Permission
+-   **Authentication**: Laravel's built-in authentication (username-based)
+-   **Authorization**: Spatie Laravel Permission (role and permission-based)
 -   **File Storage**: Laravel Storage (public disk)
 -   **Excel Import/Export**: Maatwebsite Excel
+-   **PDF Generation**: DomPDF (Barryvdh)
+
+### Frontend
+
+-   **Template**: AdminLTE 3 (Bootstrap 4-based admin template)
+-   **JavaScript Libraries**:
+    -   jQuery
+    -   DataTables (for advanced table features)
+    -   SweetAlert2 (for alerts and confirmations)
+-   **CSS Framework**: Bootstrap 4
+
+### Development Tools
+
+-   **Package Manager**: Composer (PHP), NPM (JavaScript)
+-   **Version Control**: Git
+
+## Application Structure
+
+### Directory Organization
+
+```
+app/
+├── Console/Commands/          # Artisan commands
+│   ├── SaveDayValueForApprovedPRs.php
+│   ├── SaveDayValueForApprovedPOs.php
+│   ├── UpdatePrStatusForApprovedPOs.php
+│   └── UpdatePrStatusForExistingAttachments.php
+├── Http/Controllers/
+│   ├── Admin/                # User and role management
+│   ├── Approvals/            # PO approval workflows
+│   ├── Auth/                 # Login and registration
+│   ├── Consignment/          # Item price and warehouse management
+│   ├── Master/               # Daily PR and PO Temp imports
+│   ├── PoService/            # PO Service management
+│   └── Procurement/          # PR and PO management
+├── Imports/                  # Excel import classes
+│   └── ItemPricesImport.php
+├── Models/                   # Eloquent models
+├── Observers/                # Model observers
+│   ├── PrAttachmentObserver.php
+│   ├── PurchaseOrderObserver.php
+│   └── PurchaseRequestObserver.php
+├── Providers/
+│   └── AppServiceProvider.php  # Observer registration
+└── Services/
+    └── ItemPriceImportService.php
+
+routes/
+├── admin.php                 # Admin routes
+├── approval.php              # Approval routes
+├── consignment.php           # Consignment routes
+├── master.php                # Master data import routes
+├── po_service.php            # PO Service routes
+├── procurement.php           # PR and PO routes
+├── suppliers.php             # Supplier routes
+└── web.php                   # Main routes and auth
+
+resources/views/
+├── admin/                    # Admin views
+├── approvals/                # Approval views
+├── auth/                     # Login/register views
+├── consignment/              # Consignment views
+├── layout/                   # Shared layouts and partials
+├── master/                   # Master import views
+├── po_service/               # PO Service views
+└── procurement/              # PR and PO views
+```
 
 ## Core Components
 
-### 1. User Management
+### 1. Authentication & Authorization
 
--   Role-based access control using Spatie Laravel Permission
--   User registration and authentication
--   User activation/deactivation
--   Role assignment to users
+#### Authentication
 
-### 2. Role & Permission System
+-   Username-based authentication (not email)
+-   Session-based authentication
+-   Guest middleware for login/register pages
+-   Auth middleware for protected routes
 
--   Predefined roles: superadmin, admin, adminproc, director, buyer, user
--   Granular permissions for different system areas
--   Permission management interface
+#### Authorization
 
-### 3. Purchase Request (PR) Management
+-   Spatie Laravel Permission package
+-   Role-based access control (RBAC)
+-   Permission-based route protection
+-   Middleware aliases: `role`, `permission`, `role_or_permission`
+-   Registered in `bootstrap/app.php`
+
+#### Roles
+
+-   **superadmin**: Full system access
+-   **admin**: Administrative access
+-   **adminproc**: Procurement admin access
+-   **director**: Approval authority (level 2)
+-   **buyer**: Procurement operations
+-   **user**: Basic user access
+
+#### Permissions
+
+-   `akses_admin`: Admin panel access
+-   `akses_permission`: Permission management
+-   `akses_user`: User management
+-   `akses_master`: Master data access
+-   `akses_procurement`: Procurement module access
+-   `akses_approval`: Approval module access
+-   `akses_report`: Reports access
+-   `akses_proc_po`: PO management
+-   `akses_proc_pr`: PR management
+-   `view_poservice`: PO Service access
+-   `access_consignment`: Consignment module access
+-   `upload_consignment`: Consignment upload access
+-   `crud_consignment`: Consignment CRUD operations
+-   `search_consignment`: Consignment search access
+
+### 2. Purchase Request (PR) Management
+
+#### Features
 
 -   PR creation and tracking
--   PR status monitoring
+-   PR status monitoring (OPEN, progress, approved, CLOSED)
 -   PR search and filtering
--   Import PRs from external data sources
+-   PR details with line items
+-   Attachment management (upload, view, delete)
+-   Day calculation (time since generation)
+-   Import from temporary tables (pr_temps)
 
-### 4. Purchase Order (PO) Management
+#### Status Workflow
+
+```
+OPEN → progress (when attachment added) → approved (when all POs approved)
+```
+
+#### Models
+
+-   **PurchaseRequest**: Main PR model
+-   **PurchaseRequestDetail**: PR line items
+-   **PrAttachment**: PR attachments
+
+#### Controllers
+
+-   `App\Http\Controllers\Procurement\PRController`
+
+#### Observers
+
+-   **PurchaseRequestObserver**: Handles day value saving when status changes to approved
+-   **PrAttachmentObserver**: Auto-updates PR status to 'progress' when attachment added
+
+### 3. Purchase Order (PO) Management
+
+#### Features
 
 -   PO creation from scratch or based on PRs
 -   PO editing and updating
 -   PO details with line items
--   File attachments for POs
+-   File attachments for POs (upload, view, preview Excel)
 -   PO search and advanced filtering
+-   Day calculation (time since creation)
+-   Import from temporary tables (po_temps)
 
-### 5. Multi-level Approval Workflow
+#### Status Constants
 
--   Configurable approval levels
+-   `STATUS_DRAFT`: Initial state
+-   `STATUS_SUBMITTED`: Submitted for approval
+-   `STATUS_APPROVED`: Fully approved
+-   `STATUS_REJECTED`: Rejected by approver
+-   `STATUS_REVISION`: Revision requested
+
+#### Models
+
+-   **PurchaseOrder**: Main PO model
+-   **PurchaseOrderDetail**: PO line items
+-   **PoAttachment**: PO attachments
+
+#### Controllers
+
+-   `App\Http\Controllers\Procurement\POController`
+
+#### Observers
+
+-   **PurchaseOrderObserver**: Handles day value saving and PR status updates when PO approved
+
+### 4. Multi-level Approval Workflow
+
+#### Features
+
+-   Configurable approval levels (hierarchical)
 -   Sequential approval process
 -   Approval, rejection, and revision request actions
 -   Approval history tracking
 -   Approval notifications
 
-### 6. Master Data Management
+#### Models
 
--   Supplier management
--   Department management
--   Project code management
--   Item/service catalog
+-   **ApprovalLevel**: Defines approval hierarchy (level 1, 2, etc.)
+-   **Approver**: Maps users to approval levels
+-   **PurchaseOrderApproval**: Tracks approval status and history
 
-### 7. Import/Export Functionality
+#### Approval Flow
 
--   Import PRs from temporary tables
--   Import POs from temporary tables
--   Import item prices from Excel files
--   Bulk data processing
+```
+PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approval
+```
 
-### 8. Consignment & Item Price Tracking
+#### Approval Statuses
+
+-   `pending`: Awaiting approval
+-   `approved`: Approved at this level
+-   `rejected`: Rejected at this level
+-   `revision`: Revision requested
+-   `cancelled`: Cancelled due to revision request
+
+#### Controllers
+
+-   `App\Http\Controllers\PurchaseOrderApprovalController`
+-   `App\Http\Controllers\Approvals\POController`
+
+### 5. Consignment & Item Price Tracking
+
+#### Features
 
 -   Item price management with history tracking
 -   Warehouse management
@@ -126,55 +287,253 @@ A comprehensive procurement management system built with Laravel 11, designed to
 -   Advanced search capabilities with DataTables integration
 -   Flexible filtering by item code, description, part number, brand, supplier, warehouse
 -   Export functionality (CSV, Excel, PDF, print)
--   Responsive data display with column visibility controls
+
+#### Models
+
+-   **ItemPrice**: Current item prices
+-   **ItemPriceHistory**: Historical price records
+-   **ItemPriceImport**: Temporary data for Excel imports
+-   **Warehouse**: Warehouse information
+
+#### Services
+
+-   **ItemPriceImportService**: Processes batch imports with validation
+
+#### Controllers
+
+-   `App\Http\Controllers\Consignment\ItemPriceController`
+-   `App\Http\Controllers\Consignment\ImportController`
+-   `App\Http\Controllers\Consignment\WarehouseController`
+-   `App\Http\Controllers\Consignment\ConsignmentController`
+
+### 6. PO Service Management
+
+#### Features
+
+-   PO Service creation and management
+-   Item service management with Excel import
+-   PDF generation and printing
+-   Service item tracking
+
+#### Models
+
+-   **PoService**: PO Service header
+-   **ItemService**: PO Service line items
+
+#### Controllers
+
+-   `App\Http\Controllers\PoService\PoServiceController`
+-   `App\Http\Controllers\PoService\ItemServiceController`
+
+### 7. Master Data Management
+
+#### Features
+
+-   Supplier management
+-   Department management
+-   Project code management
+-   Daily PR import from Excel (via pr_temps table)
+-   PO Temp import from Excel (via po_temps table)
+
+#### Models
+
+-   **Supplier**: Supplier information
+-   **Department**: Department information
+-   **Project**: Project data
+
+#### Controllers
+
+-   `App\Http\Controllers\Master\DailyPRController`
+-   `App\Http\Controllers\Master\POTempController`
+
+### 8. User Management
+
+#### Features
+
+-   User registration and authentication
+-   User activation/deactivation
+-   Role assignment to users
+-   Permission assignment
+
+#### Controllers
+
+-   `App\Http\Controllers\Admin\UserController`
+-   `App\Http\Controllers\Admin\RoleController`
+-   `App\Http\Controllers\Auth\LoginController`
+-   `App\Http\Controllers\Auth\RegisterController`
 
 ## Database Schema
 
-The database is organized into several key areas:
-
 ### Core Tables
 
--   `users` - User accounts and authentication
--   `departments` - Department information
--   `projects` - Project data
--   `suppliers` - Supplier information
--   `warehouses` - Warehouse information for consignment
+#### users
+
+-   Primary user accounts
+-   Fields: id, name, nik, username (unique), email, password, project, department_id, is_active, timestamps
+-   Relationships: hasMany Approvers, belongsTo Department
+
+#### departments
+
+-   Department information
+-   Fields: id, department_name, akronim, timestamps
+
+#### projects
+
+-   Project data
+-   Fields: id, code, name, timestamps
+
+#### suppliers
+
+-   Supplier information
+-   Fields: id, name, code, timestamps
 
 ### Procurement Tables
 
--   `purchase_requests` - PR header information
--   `purchase_request_details` - PR line items
--   `purchase_orders` - PO header information
--   `purchase_order_details` - PO line items
--   `po_temps` - Temporary PO data for imports
--   `pr_temps` - Temporary PR data for imports
+#### purchase_requests
+
+-   PR header information
+-   Fields: id, pr_draft_no, pr_no, pr_date, generated_date, day (calculated), priority, pr_status, closed_status, pr_rev_no, pr_type, project_code, dept_name, for_unit, hours_meter, required_date, requestor, remarks, timestamps
+-   Status: OPEN, progress, approved, CLOSED
+-   Relationships: hasMany PurchaseRequestDetail, belongsToMany PrAttachment
+
+#### purchase_request_details
+
+-   PR line items
+-   Fields: id, purchase_request_id, item_code, item_name, quantity, uom, open_qty, line_remarks, purchase_order_detail_id, status, timestamps
+-   Relationships: belongsTo PurchaseRequest, belongsTo PurchaseOrderDetail
+
+#### purchase_orders
+
+-   PO header information
+-   Fields: id, doc_num (unique), doc_date, create_date, day (calculated), po_delivery_date, supplier_id, po_eta, pr_no, unit_no, po_currency, total_po_price, po_with_vat, project_code, dept_code, po_status, po_delivery_status, budget_type, status, submitted_by, timestamps
+-   Status: draft, submitted, approved, rejected, revision
+-   Relationships: belongsTo Supplier, hasMany PurchaseOrderDetail, hasMany PurchaseOrderApproval, belongsToMany PoAttachment
+
+#### purchase_order_details
+
+-   PO line items
+-   Fields: id, purchase_order_id, item_code, description, remark1, remark2, qty, uom, unit_price, timestamps
+-   Relationships: belongsTo PurchaseOrder
+
+#### po_temps
+
+-   Temporary PO data for imports
+-   Used for importing PO data from Excel before creating actual POs
+
+#### pr_temps
+
+-   Temporary PR data for imports
+-   Used for importing PR data from Excel before creating actual PRs
+
+### Approval System Tables
+
+#### approval_levels
+
+-   Defines the hierarchy of approvals
+-   Fields: id, name, level, timestamps
+-   Relationships: hasMany PurchaseOrderApproval, hasMany Approvers
+
+#### approvers
+
+-   Maps users to approval levels
+-   Fields: id, user_id, approval_level_id, timestamps
+-   Relationships: belongsTo User, belongsTo ApprovalLevel
+
+#### purchase_order_approvals
+
+-   Tracks approval status and history
+-   Fields: id, purchase_order_id, approver_id (nullable), approval_level_id, status (enum: pending, approved, rejected, revision), notes, approved_at, timestamps
+-   Relationships: belongsTo PurchaseOrder, belongsTo Approver, belongsTo ApprovalLevel
+
+### Attachment System Tables
+
+#### po_attachments
+
+-   Stores PO attachment metadata
+-   Fields: id, original_name, file_path, description, timestamps
+-   Relationships: belongsToMany PurchaseOrder
+
+#### po_attachment_purchase_order
+
+-   Pivot table mapping attachments to POs
+-   Fields: po_attachment_id, purchase_order_id, timestamps
+
+#### pr_attachments
+
+-   Stores PR attachment metadata
+-   Fields: id, original_name, file_path, description, keterangan, pr_no, file_type, file_size, timestamps
+-   Relationships: belongsToMany PurchaseRequest
+
+#### pr_attachment_purchase_request
+
+-   Pivot table mapping attachments to PRs
+-   Fields: pr_attachment_id, purchase_request_id, timestamps
 
 ### Consignment Tables
 
--   `item_prices` - Item price information
--   `item_price_histories` - Historical price records
--   `item_price_imports` - Temporary data for Excel imports
+#### warehouses
 
-### Approval System
+-   Warehouse information
+-   Fields: id, name, code, description, timestamps
 
--   `approval_levels` - Defines the hierarchy of approvals
--   `approvers` - Maps users to approval levels
--   `purchase_order_approvals` - Tracks approval status and history
+#### item_prices
 
-### Attachment System
+-   Item price information
+-   Fields: id, supplier_id, item_code (nullable, indexed), item_description (nullable, indexed), part_number, brand, project (nullable, indexed), warehouse (nullable, indexed), start_date, expired_date, uploaded_by, uom, qty, price, description, timestamps
+-   Relationships: belongsTo Supplier, belongsTo User (uploader), hasMany ItemPriceHistory
 
--   `po_attachments` - Stores PO attachment metadata
--   `po_attachment_purchase_order` - Maps attachments to POs
--   `pr_attachments` - Stores PR attachment metadata
--   `pr_attachment_purchase_request` - Maps attachments to PRs
+#### item_price_histories
 
-### Authorization Tables
+-   Historical price records
+-   Fields: id, item_code (nullable, indexed), item_description (nullable, indexed), supplier_id, project (nullable), warehouse (nullable), part_number, brand, price, uom, qty, start_date, expired_date, created_by, timestamps
+-   Relationships: belongsTo Supplier, belongsTo User (creator)
 
--   `roles` - User roles
--   `permissions` - System permissions (including access_consignment, upload_consignment, crud_consignment, search_consignment)
--   `model_has_roles` - User-role relationships
--   `model_has_permissions` - Direct user-permission relationships
--   `role_has_permissions` - Role-permission relationships
+#### item_price_imports
+
+-   Temporary data for Excel imports
+-   Fields: id, supplier_id, item_code, item_description, part_number, brand, project, warehouse, start_date, expired_date, uom, qty, price, description, import_batch, status (pending/processed/error), error_message, uploaded_by, timestamps
+-   Relationships: belongsTo Supplier, belongsTo User (uploader)
+
+### PO Service Tables
+
+#### po_services
+
+-   PO Service header
+-   Fields: id, po_no (unique), date, vendor_code, project_code, is_vat, remarks, print_count, created_by, updated_by, deleted_by, deleted_at (soft deletes), timestamps
+-   Relationships: belongsTo Supplier (via vendor_code), hasMany ItemService
+
+#### item_services
+
+-   PO Service line items
+-   Fields: id, po_service_id, item_code, item_desc, qty, uom, unit_price, created_by, updated_by, timestamps
+-   Relationships: belongsTo PoService
+
+### Authorization Tables (Spatie Permission)
+
+#### roles
+
+-   User roles
+-   Fields: id, name (unique), guard_name, timestamps
+
+#### permissions
+
+-   System permissions
+-   Fields: id, name (unique), guard_name, timestamps
+
+#### model_has_roles
+
+-   User-role relationships
+-   Fields: role_id, model_type, model_id
+
+#### model_has_permissions
+
+-   Direct user-permission relationships
+-   Fields: permission_id, model_type, model_id
+
+#### role_has_permissions
+
+-   Role-permission relationships
+-   Fields: permission_id, role_id
 
 ## Application Workflow
 
@@ -186,7 +545,19 @@ graph TD
     B --> C[PR Storage]
     C --> D[PR Available for PO Creation]
     A --> E[PR Import from External]
-    E --> C
+    E --> F[pr_temps Table]
+    F --> G[Import to PR]
+    G --> C
+    C --> H[User Uploads Attachment]
+    H --> I[PrAttachmentObserver]
+    I --> J[PR Status: progress]
+    J --> K[User Creates PO from PR]
+    K --> L[PO Created]
+    L --> M[All POs Approved?]
+    M -->|Yes| N[PurchaseOrderObserver]
+    N --> O[PR Status: approved]
+    O --> P[PurchaseRequestObserver]
+    P --> Q[Save Day Value]
 ```
 
 ### Purchase Order (PO) Flow
@@ -194,30 +565,42 @@ graph TD
 ```mermaid
 graph TD
     A[PO Creation] --> B[PO Validation]
-    B --> C[PO Submission]
-    C --> D[Approval Process]
-    D --> E{Decision}
-    E -->|Approved| F[Final Approval]
-    E -->|Rejected| G[Rejection]
-    E -->|Revision| H[Sent Back for Revision]
-    H --> A
-    F --> I[PO Completed]
+    B --> C[PO Storage - Status: draft]
+    C --> D[User Submits PO]
+    D --> E[PO Status: submitted]
+    E --> F[Create Level 1 Approval]
+    F --> G[Level 1 Approver Action]
+    G -->|Approve| H[Create Level 2 Approval]
+    G -->|Reject| I[PO Status: rejected]
+    G -->|Revise| J[PO Status: revision]
+    J --> C
+    H --> K[Level 2 Approver Action]
+    K -->|Approve| L[Final Approval]
+    K -->|Reject| I
+    K -->|Revise| J
+    L --> M[PO Status: approved]
+    M --> N[PurchaseOrderObserver]
+    N --> O[Save Day Value]
+    N --> P[Check All POs for PR]
+    P --> Q{All POs Approved?}
+    Q -->|Yes| R[Update PR Status to approved]
 ```
 
 ### Approval Workflow
 
 ```mermaid
 graph TD
-    A[PO Submitted] --> B[Level 1 Approval]
-    B -->|Approved| C[Level 2 Approval]
-    C -->|Approved| D[Level 3 Approval]
-    D -->|Approved| E[Final Approval]
-    B -->|Rejected| F[PO Rejected]
-    C -->|Rejected| F
-    D -->|Rejected| F
-    B -->|Revision| G[Sent Back for Revision]
-    C -->|Revision| G
-    D -->|Revision| G
+    A[PO Submitted] --> B[Level 1 Approval Created]
+    B --> C[Approver Reviews]
+    C --> D{Decision}
+    D -->|Approve| E[Create Next Level]
+    D -->|Reject| F[PO Rejected]
+    D -->|Revision| G[PO Revision Requested]
+    G --> H[Cancel Other Approvals]
+    E --> I{More Levels?}
+    I -->|Yes| J[Next Level Approval]
+    J --> C
+    I -->|No| K[PO Approved]
 ```
 
 ### Consignment Item Price Flow
@@ -225,30 +608,198 @@ graph TD
 ```mermaid
 graph TD
     A[Manual Entry] --> C[Create Item Price]
-    B[Excel Import] --> C
-    C --> D[Store Price History]
-    D --> E[Price Available for Search]
-    E --> H[Advanced Search with DataTables]
-    H --> I[Export Data]
-    H --> J[Interactive Filtering]
-    B --> F[Validate Import Data]
-    F -->|Valid| C
-    F -->|Invalid| G[Show Error Report]
+    B[Excel Import] --> D[Validate Import]
+    D --> E[Store in item_price_imports]
+    E --> F{Batch Processing}
+    F --> G[ItemPriceImportService]
+    G --> H[Create ItemPrice]
+    H --> I[Create ItemPriceHistory]
+    I --> J[Update Import Status]
+    C --> K[Price Available for Search]
+    K --> L[DataTables Search Interface]
+    L --> M[Filter & Sort]
+    M --> N[Export Data]
 ```
+
+### PO Service Flow
+
+```mermaid
+graph TD
+    A[Create PO Service] --> B[Add Items]
+    B --> C[Manual Entry or Excel Import]
+    C --> D[ItemService Created]
+    D --> E[Generate PDF]
+    E --> F[Print PO Service]
+```
+
+## Observer Pattern Implementation
+
+### Registered Observers (AppServiceProvider)
+
+1. **PrAttachmentObserver**
+
+    - `created`: Auto-updates PR status to 'progress' when attachment uploaded
+    - `deleted`: Reverts PR status to 'OPEN' if no attachments remain
+
+2. **PurchaseOrderObserver**
+
+    - `updating`: Saves day value when status changes to 'approved'
+    - `updated`: Checks if all POs for PR are approved and updates PR status
+
+3. **PurchaseRequestObserver**
+    - `updating`: Saves day value when status changes to 'approved'
+
+### Observer Registration Location
+
+`app/Providers/AppServiceProvider.php::boot()`
+
+## Route Organization
+
+### Route Files
+
+1. **web.php**: Main routes, authentication, includes other route files
+2. **admin.php**: User and role management routes
+3. **procurement.php**: PR and PO management routes
+4. **approval.php**: Approval workflow routes
+5. **master.php**: Master data import routes
+6. **consignment.php**: Consignment module routes
+7. **po_service.php**: PO Service routes
+8. **suppliers.php**: Supplier management routes
+
+### Route Middleware
+
+-   **Guest routes**: Login, register
+-   **Auth routes**: All authenticated routes
+-   **Permission-based**: Routes protected by Spatie Permission middleware
+
+## Artisan Commands
+
+### Data Migration Commands
+
+1. **pr:update-status-for-attachments**
+
+    - Updates existing PRs with attachments to 'progress' status
+    - Location: `app/Console/Commands/UpdatePrStatusForExistingAttachments.php`
+
+2. **pr:update-status-for-approved-pos**
+
+    - Updates PR status to 'approved' where all related POs are approved
+    - Location: `app/Console/Commands/UpdatePrStatusForApprovedPOs.php`
+
+3. **pr:save-day-value-for-approved**
+
+    - Saves day values for existing approved PRs
+    - Location: `app/Console/Commands/SaveDayValueForApprovedPRs.php`
+
+4. **po:save-day-value-for-approved**
+    - Saves day values for existing approved POs
+    - Location: `app/Console/Commands/SaveDayValueForApprovedPOs.php`
+
+## File Storage
+
+### Storage Configuration
+
+-   **Disk**: `public`
+-   **Storage Link**: `php artisan storage:link` creates symlink from `storage/app/public` to `public/storage`
+-   **Attachment Paths**:
+    -   PO Attachments: `storage/app/public/po-attachments/`
+    -   PR Attachments: `storage/app/public/pr-attachments/`
+
+### File Handling
+
+-   Attachments stored with original filename
+-   File paths stored in attachment tables
+-   Excel preview functionality for PO/PR attachments
 
 ## Security Implementation
 
--   Role-based access control
--   Authentication for all procurement actions
--   Authorization checks for approval actions
--   Input validation and sanitization
--   CSRF protection
--   Secure file handling
+### Authentication
+
+-   Laravel's built-in authentication
+-   Session-based with CSRF protection
+-   Username-based login (not email)
+
+### Authorization
+
+-   Spatie Laravel Permission for RBAC
+-   Middleware protection on routes
+-   Permission checks in controllers
+-   Role-based menu visibility in views
+
+### Data Protection
+
+-   Input validation on all forms
+-   SQL injection prevention via Eloquent ORM
+-   XSS protection via Blade templating
+-   CSRF tokens on all forms
+
+### File Security
+
+-   File upload validation
+-   Storage in protected directory (public/storage)
+-   Access control via authentication
 
 ## Deployment
 
--   Standard Laravel deployment
--   PHP 8.2+ environment
--   MySQL database
--   File storage configuration for attachments
--   Web server with appropriate PHP configuration
+### Environment Requirements
+
+-   PHP 8.2+
+-   MySQL 5.7+ or 8.0+
+-   Composer
+-   NPM (for frontend assets if needed)
+
+### Deployment Steps
+
+1.  Environment configuration (`.env`)
+2.  Composer install
+3.  Database migration (`php artisan migrate`)
+4.  Database seeding (`php artisan db:seed`)
+5.  Storage link creation (`php artisan storage:link`)
+6.  Cache optimization (`php artisan config:cache`, `route:cache`, `view:cache`)
+7.  File permissions setup
+8.  Data migration commands (if upgrading)
+
+See `DEPLOYMENT_CHECKLIST.md` for detailed deployment procedures.
+
+## Key Design Patterns
+
+### Observer Pattern
+
+-   Model observers for automatic status updates
+-   Registered in AppServiceProvider
+
+### Service Pattern
+
+-   ItemPriceImportService for batch processing
+-   Separates business logic from controllers
+
+### Repository Pattern (Potential)
+
+-   Some controllers use direct model access
+-   Opportunity for repository abstraction if needed
+
+### Factory Pattern
+
+-   Laravel factories for testing data
+-   Used in seeders
+
+## Performance Considerations
+
+### Database Indexes
+
+-   Item code indexes on item_prices and item_price_histories
+-   Item description indexes
+-   Project and warehouse indexes for consignment searches
+
+### Query Optimization
+
+-   Eager loading with `with()` to prevent N+1 queries
+-   Pagination for large datasets
+-   DataTables client-side processing for consignment search
+
+### Caching
+
+-   Config caching in production
+-   Route caching in production
+-   View caching in production
+-   Permission caching (Spatie Permission)

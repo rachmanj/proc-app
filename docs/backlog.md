@@ -1,5 +1,5 @@
 **Purpose**: Future features and improvements prioritized by value
-**Last Updated**: 2025-08-03
+**Last Updated**: 2025-01-27
 
 # Feature Backlog
 

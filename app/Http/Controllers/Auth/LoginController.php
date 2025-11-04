@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Activitylog\Models\Activity;
 
 class LoginController extends Controller
 {
@@ -23,6 +24,10 @@ class LoginController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
+            activity()
+                ->causedBy(Auth::user())
+                ->log('User logged in');
+
             return redirect()->intended('/');
         }
 
@@ -33,6 +38,12 @@ class LoginController extends Controller
 
     public function logout()
     {
+        $user = Auth::user();
+        
+        activity()
+            ->causedBy($user)
+            ->log('User logged out');
+
         Auth::logout();
 
         request()->session()->invalidate();

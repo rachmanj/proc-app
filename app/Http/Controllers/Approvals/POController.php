@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class POController extends Controller
 {
@@ -256,6 +257,9 @@ class POController extends Controller
             return datatables()
                 ->of($query)
                 ->addIndexColumn()
+                ->addColumn('checkbox', function ($po) {
+                    return '<input type="checkbox" name="po_ids[]" value="' . $po->id . '">';
+                })
                 ->editColumn('doc_date', function ($po) {
                     return $po->doc_date->format('d M Y');
                 })
@@ -277,7 +281,7 @@ class POController extends Controller
                 ->filterColumn('project_code', function ($query, $keyword) {
                     $query->where('purchase_orders.project_code', 'like', "%{$keyword}%");
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['checkbox', 'action'])
                 ->make(true);
         } catch (\Exception $e) {
             Log::error('Error in pendingData: ' . $e->getMessage());
@@ -285,6 +289,185 @@ class POController extends Controller
                 'error' => true,
                 'message' => 'An error occurred while fetching data'
             ], 500);
+        }
+    }
+
+    /**
+     * Bulk approve purchase orders
+     */
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:purchase_orders,id'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = Auth::user();
+            $userApproverLevels = Approver::where('user_id', $user->id)
+                ->pluck('approval_level_id');
+
+            $successCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($request->ids as $poId) {
+                try {
+                    $purchaseOrder = PurchaseOrder::findOrFail($poId);
+                    $approval = $purchaseOrder->approvals()
+                        ->where('status', 'pending')
+                        ->whereIn('approval_level_id', $userApproverLevels)
+                        ->first();
+
+                    if ($approval) {
+                        $purchaseOrder->approve($user->id);
+                        $successCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "PO {$purchaseOrder->doc_num}: Not available for your approval";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "PO ID {$poId}: " . $e->getMessage();
+                    Log::error("Bulk approve error for PO {$poId}: " . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            $message = "Successfully approved {$successCount} PO(s)";
+            if ($failedCount > 0) {
+                $message .= ". {$failedCount} failed.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'success_count' => $successCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Bulk approve error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing bulk approval: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk reject purchase orders
+     */
+    public function bulkReject(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:purchase_orders,id',
+            'notes' => 'nullable|string'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = Auth::user();
+            $userApproverLevels = Approver::where('user_id', $user->id)
+                ->pluck('approval_level_id');
+
+            $successCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($request->ids as $poId) {
+                try {
+                    $purchaseOrder = PurchaseOrder::findOrFail($poId);
+                    $approval = $purchaseOrder->approvals()
+                        ->where('status', 'pending')
+                        ->whereIn('approval_level_id', $userApproverLevels)
+                        ->first();
+
+                    if ($approval) {
+                        $purchaseOrder->reject($user->id, $request->notes);
+                        $successCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "PO {$purchaseOrder->doc_num}: Not available for your approval";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "PO ID {$poId}: " . $e->getMessage();
+                    Log::error("Bulk reject error for PO {$poId}: " . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            $message = "Successfully rejected {$successCount} PO(s)";
+            if ($failedCount > 0) {
+                $message .= ". {$failedCount} failed.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'success_count' => $successCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Bulk reject error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing bulk rejection: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk export purchase orders
+     */
+    public function bulkExport(Request $request)
+    {
+        $ids = explode(',', $request->get('ids', ''));
+        $ids = array_filter(array_map('intval', $ids));
+
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'No POs selected for export');
+        }
+
+        try {
+            $purchaseOrders = PurchaseOrder::whereIn('id', $ids)
+                ->with(['supplier', 'purchaseOrderDetails'])
+                ->get();
+
+            $data = [];
+            foreach ($purchaseOrders as $po) {
+                $totalAmount = $po->purchaseOrderDetails->sum(function ($detail) {
+                    return $detail->qty * $detail->unit_price;
+                });
+
+                $data[] = [
+                    'PO Number' => $po->doc_num,
+                    'Date' => $po->doc_date->format('Y-m-d'),
+                    'Supplier' => $po->supplier->name ?? '-',
+                    'Project Code' => $po->project_code ?? '-',
+                    'Status' => ucfirst($po->status),
+                    'Total Amount' => number_format($totalAmount, 2),
+                    'Created At' => $po->created_at->format('Y-m-d H:i:s'),
+                ];
+            }
+
+            return Excel::download(
+                new \App\Exports\PurchaseOrdersExport($data),
+                'bulk_po_export_' . date('Y-m-d_His') . '.xlsx'
+            );
+        } catch (\Exception $e) {
+            Log::error('Bulk export error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error exporting POs: ' . $e->getMessage());
         }
     }
 }

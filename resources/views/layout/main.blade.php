@@ -17,6 +17,7 @@
     <div class="wrapper">
 
         @include('layout.partials.navbar')
+        @include('layout.partials.loading')
         @include('sweetalert::alert')
 
         {{-- Flash Messages --}}
@@ -38,9 +39,11 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: '{{ session('error') }}',
+                            html: '{{ session('error') }}',
                             position: 'center',
-                            showConfirmButton: true
+                            showConfirmButton: true,
+                            confirmButtonColor: '#dc3545',
+                            allowOutsideClick: false
                         });
                     @endif
 
