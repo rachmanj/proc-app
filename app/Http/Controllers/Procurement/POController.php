@@ -39,7 +39,96 @@ class POController extends Controller
             return view($views[$page], compact('suppliers', 'unitNos', 'projectCodes', 'statuses'));
         } 
 
+        if ($page == 'dashboard') {
+            $dashboardData = $this->getDashboardData();
+            return view($views[$page], $dashboardData);
+        }
+
         return view($views[$page]);
+    }
+
+    public function getDashboardData()
+    {
+        // Get distinct project codes ordered
+        $projectCodes = PurchaseOrder::distinct()
+            ->orderBy('project_code')
+            ->pluck('project_code')
+            ->toArray();
+
+        // PO counts by project code
+        $poCountsByProject = PurchaseOrder::select('project_code', DB::raw('count(*) as total'))
+            ->groupBy('project_code')
+            ->get()
+            ->pluck('total', 'project_code')
+            ->toArray();
+
+        // Draft PO counts by project
+        $draftPoCountsByProject = PurchaseOrder::where('status', 'draft')
+            ->select('project_code', DB::raw('count(*) as total'))
+            ->groupBy('project_code')
+            ->get()
+            ->pluck('total', 'project_code')
+            ->toArray();
+
+        // Submitted PO counts by project
+        $submittedPoCountsByProject = PurchaseOrder::where('status', 'submitted')
+            ->select('project_code', DB::raw('count(*) as total'))
+            ->groupBy('project_code')
+            ->get()
+            ->pluck('total', 'project_code')
+            ->toArray();
+
+        // Calculate PO values by project (sum of item_amount from purchase_order_details)
+        $poValuesByProject = DB::table('purchase_orders as po')
+            ->leftJoin('purchase_order_details as pod', 'po.id', '=', 'pod.purchase_order_id')
+            ->select('po.project_code', DB::raw('COALESCE(SUM(pod.item_amount), 0) as total_value'))
+            ->groupBy('po.project_code')
+            ->get()
+            ->pluck('total_value', 'project_code')
+            ->toArray();
+
+        // Total counts
+        $totalPOs = PurchaseOrder::count();
+        $totalDraftPOs = PurchaseOrder::where('status', 'draft')->count();
+        $totalSubmittedPOs = PurchaseOrder::where('status', 'submitted')->count();
+        $totalApprovedPOs = PurchaseOrder::where('status', 'approved')->count();
+
+        // Total PO value
+        $totalPOValue = DB::table('purchase_order_details')
+            ->sum('item_amount') ?? 0;
+
+        // Monthly PO value (current month)
+        $startOfMonth = now()->startOfMonth();
+        $monthlyPOValue = DB::table('purchase_orders as po')
+            ->leftJoin('purchase_order_details as pod', 'po.id', '=', 'pod.purchase_order_id')
+            ->where('po.create_date', '>=', $startOfMonth)
+            ->sum('pod.item_amount') ?? 0;
+
+        // Active suppliers count
+        $activeSuppliers = PurchaseOrder::distinct('supplier_id')->count('supplier_id');
+
+        // Status distribution for chart
+        $statusDistribution = PurchaseOrder::select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->get()
+            ->pluck('count', 'status')
+            ->toArray();
+
+        return compact(
+            'projectCodes',
+            'poCountsByProject',
+            'draftPoCountsByProject',
+            'submittedPoCountsByProject',
+            'poValuesByProject',
+            'totalPOs',
+            'totalDraftPOs',
+            'totalSubmittedPOs',
+            'totalApprovedPOs',
+            'totalPOValue',
+            'monthlyPOValue',
+            'activeSuppliers',
+            'statusDistribution'
+        );
     }
 
     /**

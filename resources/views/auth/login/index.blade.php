@@ -19,7 +19,7 @@
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <h2><b>PROC</b> App<small> | v.1.0</small></h2>
+            <h2><b>PROC</b> App<small> | v.2.1</small></h2>
         </div>
         <!-- /.login-logo -->
         <div class="card">
@@ -77,6 +77,85 @@
             </div>
             <!-- /.login-card-body -->
         </div>
+
+        <!-- What's New Section -->
+        <div class="card mt-3" id="whatsNewCard">
+            <div class="card-header p-2" style="cursor: pointer;" data-toggle="collapse" data-target="#whatsNewContent" aria-expanded="false">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-star text-warning"></i> 
+                    <strong>What's New</strong>
+                    <small class="text-muted">- Recent Improvements</small>
+                    <span class="float-right">
+                        <i class="fas fa-chevron-down" id="whatsNewIcon"></i>
+                    </span>
+                </h5>
+            </div>
+            <div id="whatsNewContent" class="collapse">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-chart-line text-primary mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Enhanced Dashboard</strong>
+                                    <small class="d-block text-muted">Real-time metrics, charts, and quick actions</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-file-excel text-success mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Reporting & Analytics</strong>
+                                    <small class="d-block text-muted">Comprehensive reports with export capabilities</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-tasks text-info mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Bulk Operations</strong>
+                                    <small class="d-block text-muted">Bulk approval, rejection, and export</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-search text-warning mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Advanced Search</strong>
+                                    <small class="d-block text-muted">Date filters, multi-select, saved presets</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-bell text-danger mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Notification System</strong>
+                                    <small class="d-block text-muted">Real-time notifications and alerts</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-magic text-purple mr-2 mt-1"></i>
+                                <div>
+                                    <strong>UX Improvements</strong>
+                                    <small class="d-block text-muted">Loading indicators, tooltips, breadcrumbs</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="dismissWhatsNew">
+                            <i class="fas fa-times"></i> Dismiss
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <!-- /.login-box -->
 
@@ -86,6 +165,78 @@
     <script src="{{ asset('adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- AdminLTE App -->
     <script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Check if user has dismissed the "What's New" section
+            const dismissed = localStorage.getItem('whatsNewDismissed');
+            if (dismissed === 'true') {
+                $('#whatsNewCard').hide();
+            } else {
+                // Auto-expand on first visit (optional)
+                // $('#whatsNewContent').collapse('show');
+            }
+
+            // Handle collapse icon rotation
+            $('#whatsNewContent').on('show.bs.collapse', function() {
+                $('#whatsNewIcon').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            });
+
+            $('#whatsNewContent').on('hide.bs.collapse', function() {
+                $('#whatsNewIcon').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            });
+
+            // Dismiss button functionality
+            $('#dismissWhatsNew').on('click', function() {
+                localStorage.setItem('whatsNewDismissed', 'true');
+                $('#whatsNewCard').fadeOut(300);
+            });
+        });
+    </script>
+
+    <style>
+        .text-purple {
+            color: #6f42c1 !important;
+        }
+
+        #whatsNewCard {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #whatsNewCard .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        #whatsNewCard .card-header:hover {
+            background-color: #e9ecef;
+        }
+
+        #whatsNewCard .card-body {
+            background-color: #ffffff;
+        }
+
+        #whatsNewCard .fa-star {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .login-box {
+            width: 360px;
+        }
+
+        @media (max-width: 576px) {
+            .login-box {
+                width: 90%;
+                margin-top: 20px;
+            }
+        }
+    </style>
 </body>
 
 </html>
