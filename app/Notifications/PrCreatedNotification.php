@@ -23,11 +23,13 @@ class PrCreatedNotification extends Notification
 
     public function toArray(object $notifiable): array
     {
+        $prNumber = $this->purchaseRequest->pr_no ?? $this->purchaseRequest->pr_draft_no;
+
         return [
             'type' => 'pr_created',
-            'message' => "New Purchase Request {$this->purchaseRequest->pr_no ?? $this->purchaseRequest->pr_draft_no} has been created",
+            'message' => "New Purchase Request {$prNumber} has been created",
             'pr_id' => $this->purchaseRequest->id,
-            'pr_no' => $this->purchaseRequest->pr_no ?? $this->purchaseRequest->pr_draft_no,
+            'pr_no' => $prNumber,
             'url' => route('procurement.pr.show', $this->purchaseRequest),
             'created_at' => now()->toDateTimeString(),
         ];
