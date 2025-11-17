@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-01-27
+Last Updated: 2025-11-17
 
 ## Architecture Documentation Guidelines
 
@@ -56,7 +56,7 @@ A comprehensive procurement management system built with Laravel 11, designed to
 
 -   **Framework**: Laravel 11
 -   **PHP Version**: 8.2+
--   **Database**: MySQL
+-   **Database**: MySQL (primary), SQL Server (SAP B1 connection via `sap_sql`)
 -   **Authentication**: Laravel's built-in authentication (username-based)
 -   **Authorization**: Spatie Laravel Permission (role and permission-based)
 -   **File Storage**: Laravel Storage (public disk)
@@ -173,6 +173,8 @@ resources/views/
 -   `upload_consignment`: Consignment upload access
 -   `crud_consignment`: Consignment CRUD operations
 -   `search_consignment`: Consignment search access
+-   `sync-custom-date`: Access to custom date range selection in SAP sync (v2.2)
+-   `impor-sap-data`: Access to PR Import and PO Import menu items (v2.2)
 
 ### 2. Purchase Request (PR) Management
 
@@ -334,17 +336,34 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 -   Project code management
 -   Daily PR import from Excel (via pr_temps table)
 -   PO Temp import from Excel (via po_temps table)
+-   **SAP B1 Direct SQL Server Sync** (v2.2)
+    -   Direct synchronization with SAP B1 SQL Server for PR and PO data
+    -   Consolidated sync interface for both PR and PO data types
+    -   Date range selection (TODAY, YESTERDAY, CUSTOM)
+    -   Automatic conversion from temporary tables to main tables after sync
+    -   Detailed sync logging and history tracking
+    -   Permission-based access control (`sync-custom-date` for custom date ranges, `impor-sap-data` for import menu items)
 
 #### Models
 
 -   **Supplier**: Supplier information
 -   **Department**: Department information
 -   **Project**: Project data
+-   **SyncLog**: Tracks sync operations with status, record counts, and error messages
+
+#### Services
+
+-   **SapService**: Handles SAP B1 SQL Server queries and data mapping
+    -   `executePoSqlQuery($startDate, $endDate)`: Executes PO SQL query from `database/list_po.sql`
+    -   `executePrSqlQuery($startDate, $endDate)`: Executes PR SQL query from `database/list_pr_generated.sql`
+    -   `mapPoResultToModel($row)`: Maps SQL results to PoTemp model
+    -   `mapPrResultToModel($row)`: Maps SQL results to PrTemp model
 
 #### Controllers
 
 -   `App\Http\Controllers\Master\DailyPRController`
 -   `App\Http\Controllers\Master\POTempController`
+-   `App\Http\Controllers\Master\SyncWithSapController`: Consolidated sync controller for PR and PO data
 
 ### 8. User Management
 
@@ -423,7 +442,14 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 #### pr_temps
 
 -   Temporary PR data for imports
--   Used for importing PR data from Excel before creating actual PRs
+-   Used for importing PR data from Excel or SAP B1 sync before creating actual PRs
+
+#### sync_logs
+
+-   Tracks SAP B1 synchronization operations
+-   Fields: id, data_type (enum: PR, PO), start_date, end_date, records_synced, records_created, records_skipped, sync_status (enum: success, failed, partial), convert_status (enum: success, failed, skipped), error_message, user_id, timestamps
+-   Relationships: belongsTo User
+-   Used for audit trail and troubleshooting sync operations
 
 ### Approval System Tables
 
@@ -603,6 +629,27 @@ graph TD
     I -->|No| K[PO Approved]
 ```
 
+### SAP B1 Direct Sync Flow (v2.2)
+
+```mermaid
+graph TD
+    A[User Selects Date Range] --> B{TODAY/YESTERDAY/CUSTOM}
+    B --> C[SyncWithSapController]
+    C --> D[SapService.executeSqlQuery]
+    D --> E[SAP B1 SQL Server]
+    E --> F[Query Results]
+    F --> G[Map to Temp Model]
+    G --> H[Truncate Temp Table]
+    H --> I[Insert to pr_temps/po_temps]
+    I --> J[Create SyncLog Entry]
+    J --> K[Auto-Convert to Main Table]
+    K --> L{Conversion Success?}
+    L -->|Yes| M[Update SyncLog: Success]
+    L -->|No| N[Update SyncLog: Failed]
+    M --> O[Display Results to User]
+    N --> O
+```
+
 ### Consignment Item Price Flow
 
 ```mermaid
@@ -661,7 +708,12 @@ graph TD
 2. **admin.php**: User and role management routes
 3. **procurement.php**: PR and PO management routes
 4. **approval.php**: Approval workflow routes
-5. **master.php**: Master data import routes
+5. **master.php**: Master data import routes and SAP B1 sync routes
+    -   `/master/sync-with-sap`: Consolidated SAP sync interface
+    -   `/master/sync-with-sap/sync-pr`: PR sync endpoint
+    -   `/master/sync-with-sap/sync-po`: PO sync endpoint
+    -   `/master/dailypr`: PR import from Excel
+    -   `/master/potemp`: PO import from Excel
 6. **consignment.php**: Consignment module routes
 7. **po_service.php**: PO Service routes
 8. **suppliers.php**: Supplier management routes

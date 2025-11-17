@@ -13,6 +13,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RealRashid\SweetAlert\Facades\Alert;
+use App\Services\SapService;
 
 class DailyPRController extends Controller
 {
@@ -49,6 +50,70 @@ class DailyPRController extends Controller
             return redirect()->back()->with('success', "Successfully imported {$rowCount} rows of data.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error importing data: ' . $e->getMessage());
+        }
+    }
+
+    public function syncFromSap(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            // Validate date range (max 90 days)
+            $start = new \DateTime($startDate);
+            $end = new \DateTime($endDate);
+            $diff = $start->diff($end);
+            
+            if ($diff->days > 90) {
+                return redirect()->back()->with('error', 'Date range cannot exceed 90 days');
+            }
+
+            Log::info('Starting PR sync from SAP', [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]);
+
+            $sapService = new SapService();
+            
+            // Execute SQL query
+            $results = $sapService->executePrSqlQuery($startDate, $endDate);
+
+            if (empty($results)) {
+                return redirect()->back()->with('info', 'No data found for the selected date range');
+            }
+
+            // Clear existing data
+            PrTemp::truncate();
+            Log::info('Cleared existing temporary PR data');
+
+            // Map and insert data
+            $insertData = [];
+            foreach ($results as $row) {
+                $insertData[] = $sapService->mapPrResultToModel($row);
+            }
+
+            // Bulk insert in chunks for better performance
+            $chunks = array_chunk($insertData, 500);
+            foreach ($chunks as $chunk) {
+                PrTemp::insert($chunk);
+            }
+
+            $rowCount = PrTemp::count();
+            Log::info('PR sync completed successfully', [
+                'row_count' => $rowCount,
+            ]);
+
+            return redirect()->back()->with('success', "Successfully synced {$rowCount} records from SAP");
+        } catch (\Exception $e) {
+            Log::error('PR Sync Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return redirect()->back()->with('error', 'Error syncing data from SAP: ' . $e->getMessage());
         }
     }
 

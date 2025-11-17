@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-17
 
 # Technical Decision Records
 
@@ -105,3 +105,46 @@ Decision: Display PO Attachments Without Local File Existence Check - 2025-07-08
 -   View buttons still present but will lead to 404 errors when files don't exist locally
 
 **Review Date**: 2025-10-08 (3 months)
+
+---
+
+Decision: SAP B1 Direct SQL Server Sync Implementation - 2025-11-17
+
+**Context**: The system needed to synchronize PR and PO data directly from SAP B1 SQL Server to eliminate manual Excel imports. The existing Excel import workflow required users to export data from SAP, format it, and manually import it, which was time-consuming and error-prone.
+
+**Options Considered**:
+
+1. **Option A**: Continue with Excel import workflow
+    - ✅ Pros: No new infrastructure needed, users familiar with process
+    - ❌ Cons: Manual, time-consuming, error-prone, requires data formatting
+
+2. **Option B**: Direct SQL Server connection with consolidated sync interface
+    - ✅ Pros: Automated, eliminates manual steps, real-time data, consolidated UI, auto-conversion
+    - ❌ Cons: Requires SQL Server access, additional database connection, more complex implementation
+
+3. **Option C**: OData API integration
+    - ✅ Pros: Standard API approach, no direct database access needed
+    - ❌ Cons: Limited by OData field mapping issues, UDFs not exposed, complex joins difficult
+
+**Decision**: Implemented Option B - Direct SQL Server connection with consolidated sync interface
+
+**Rationale**:
+- Direct SQL access overcomes OData limitations (field name mismatches, UDFs not exposed, complex joins)
+- Consolidated interface provides better UX with unified PR and PO sync in one place
+- Auto-conversion feature eliminates manual step of converting temp tables to main tables
+- Detailed logging provides audit trail and troubleshooting capabilities
+- Permission-based access control allows fine-grained security (custom date ranges, import menu visibility)
+
+**Implementation**:
+- Added `sap_sql` database connection in `config/database.php` for SQL Server access
+- Created `SapService` to handle SQL queries and data mapping
+- Implemented `SyncWithSapController` with consolidated sync interface
+- Added `sync_logs` table for tracking sync operations
+- Created tabbed UI with PR and PO sync panels
+- Implemented date range selection (TODAY, YESTERDAY, CUSTOM) with UTC+8 timezone support
+- Added auto-conversion from temp tables to main tables after successful sync
+- Created new permissions: `sync-custom-date` and `impor-sap-data`
+- Updated menu structure: "Master" renamed to "Sync Data" with "Sync With SAP" as primary option
+- Removed individual "Sync from SAP" buttons from PR and PO import pages
+
+**Review Date**: 2026-02-17 (3 months)

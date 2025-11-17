@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\POTemp;
+use App\Models\PoTemp;
 use Yajra\DataTables\Facades\DataTables;
 use App\Imports\POTempImport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -13,6 +13,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use Illuminate\Support\Facades\Log;
 use App\Models\Supplier;
+use App\Services\SapService;
 
 
 class POTempController extends Controller
@@ -31,7 +32,7 @@ class POTempController extends Controller
 
     public function data()
     {
-        $query = POTemp::query();
+            $query = PoTemp::query();
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -77,7 +78,7 @@ class POTempController extends Controller
             ]);
 
             // Clear existing data
-            POTemp::truncate();
+            PoTemp::truncate();
             Log::info('Cleared existing temporary data');
 
             // Import new data
@@ -87,7 +88,7 @@ class POTempController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data imported successfully',
-                'rowCount' => POTemp::count()
+                'rowCount' => PoTemp::count()
             ]);
         } catch (\Exception $e) {
             Log::error('Import Error: ' . $e->getMessage());
@@ -100,11 +101,89 @@ class POTempController extends Controller
         }
     }
 
+    public function syncFromSap(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            // Validate date range (max 90 days)
+            $start = new \DateTime($startDate);
+            $end = new \DateTime($endDate);
+            $diff = $start->diff($end);
+            
+            if ($diff->days > 90) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Date range cannot exceed 90 days'
+                ], 400);
+            }
+
+            Log::info('Starting PO sync from SAP', [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]);
+
+            $sapService = new SapService();
+            
+            // Execute SQL query
+            $results = $sapService->executePoSqlQuery($startDate, $endDate);
+
+            if (empty($results)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No data found for the selected date range',
+                    'rowCount' => 0
+                ]);
+            }
+
+            // Clear existing data
+            PoTemp::truncate();
+            Log::info('Cleared existing temporary PO data');
+
+            // Map and insert data
+            $insertData = [];
+            foreach ($results as $row) {
+                $insertData[] = $sapService->mapPoResultToModel($row);
+            }
+
+            // Bulk insert in chunks for better performance
+            $chunks = array_chunk($insertData, 500);
+            foreach ($chunks as $chunk) {
+                PoTemp::insert($chunk);
+            }
+
+            $rowCount = PoTemp::count();
+            Log::info('PO sync completed successfully', [
+                'row_count' => $rowCount,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully synced {$rowCount} records from SAP",
+                'rowCount' => $rowCount
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PO Sync Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error syncing data from SAP: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function copyToPO()
     {
         try {
             // Get all unique PO temps grouped by PO number
-            $poGroups = POTemp::select(
+            $poGroups = PoTemp::select(
                 'po_no',
                 'posting_date',
                 'create_date',
@@ -183,7 +262,7 @@ class POTempController extends Controller
                 ]);
 
                 // Get and create details for this PO
-                $poDetails = POTemp::where('po_no', $poGroup->po_no)
+                $poDetails = PoTemp::where('po_no', $poGroup->po_no)
                     ->select([
                         'item_code',
                         'description',
@@ -215,7 +294,7 @@ class POTempController extends Controller
 
             // Clear temporary data only if we have successfully imported or skipped
             if ($importedCount > 0 || $skippedCount > 0) {
-                POTemp::truncate();
+                PoTemp::truncate();
             }
 
             // Re-enable foreign key checks

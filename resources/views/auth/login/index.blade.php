@@ -19,7 +19,7 @@
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <h2><b>PROC</b> App<small> | v.2.1</small></h2>
+            <h2><b>PROC</b> App<small> | v.2.2</small></h2>
         </div>
         <!-- /.login-logo -->
         <div class="card">
@@ -144,6 +144,15 @@
                                 <div>
                                     <strong>UX Improvements</strong>
                                     <small class="d-block text-muted">Loading indicators, tooltips, breadcrumbs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-sync-alt text-info mr-2 mt-1"></i>
+                                <div>
+                                    <strong>SAP B1 Direct Sync</strong>
+                                    <small class="d-block text-muted">Direct synchronization with SAP B1 SQL Server for PR and PO data</small>
                                 </div>
                             </div>
                         </div>

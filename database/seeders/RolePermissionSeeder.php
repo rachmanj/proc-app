@@ -10,34 +10,46 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            ['name' => 'admin', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'superadmin', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'adminproc', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'buyer', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'director', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'user', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'admin', 'guard_name' => 'web'],
+            ['name' => 'superadmin', 'guard_name' => 'web'],
+            ['name' => 'adminproc', 'guard_name' => 'web'],
+            ['name' => 'buyer', 'guard_name' => 'web'],
+            ['name' => 'director', 'guard_name' => 'web'],
+            ['name' => 'user', 'guard_name' => 'web'],
         ];
 
-        DB::table('roles')->insert($roles);
+        foreach ($roles as $role) {
+            DB::table('roles')->updateOrInsert(
+                ['name' => $role['name'], 'guard_name' => $role['guard_name']],
+                array_merge($role, ['created_at' => now(), 'updated_at' => now()])
+            );
+        }
 
         $permissions = [
-            ['name' => 'akses_admin', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_permission', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_user', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_master', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_procurement', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_approval', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_report', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_proc_po', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'akses_proc_pr', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'view_poservice', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'access_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'upload_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'crud_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'search_consignment', 'guard_name' => 'web', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'akses_admin', 'guard_name' => 'web'],
+            ['name' => 'akses_permission', 'guard_name' => 'web'],
+            ['name' => 'akses_user', 'guard_name' => 'web'],
+            ['name' => 'akses_master', 'guard_name' => 'web'],
+            ['name' => 'akses_procurement', 'guard_name' => 'web'],
+            ['name' => 'akses_approval', 'guard_name' => 'web'],
+            ['name' => 'akses_report', 'guard_name' => 'web'],
+            ['name' => 'akses_proc_po', 'guard_name' => 'web'],
+            ['name' => 'akses_proc_pr', 'guard_name' => 'web'],
+            ['name' => 'view_poservice', 'guard_name' => 'web'],
+            ['name' => 'access_consignment', 'guard_name' => 'web'],
+            ['name' => 'upload_consignment', 'guard_name' => 'web'],
+            ['name' => 'crud_consignment', 'guard_name' => 'web'],
+            ['name' => 'search_consignment', 'guard_name' => 'web'],
+            ['name' => 'sync-custom-date', 'guard_name' => 'web'],
+            ['name' => 'impor-sap-data', 'guard_name' => 'web'],
         ];
 
-        DB::table('permissions')->insert($permissions);
+        foreach ($permissions as $permission) {
+            DB::table('permissions')->updateOrInsert(
+                ['name' => $permission['name'], 'guard_name' => $permission['guard_name']],
+                array_merge($permission, ['created_at' => now(), 'updated_at' => now()])
+            );
+        }
 
         // get superadmin role
         $superadminRoleId = DB::table('roles')->where('name', 'superadmin')->first()->id;
@@ -60,6 +72,8 @@ class RolePermissionSeeder extends Seeder
         $uploadConsignmentPermissionId = DB::table('permissions')->where('name', 'upload_consignment')->first()->id;
         $crudConsignmentPermissionId = DB::table('permissions')->where('name', 'crud_consignment')->first()->id;
         $searchConsignmentPermissionId = DB::table('permissions')->where('name', 'search_consignment')->first()->id;
+        $syncCustomDatePermissionId = DB::table('permissions')->where('name', 'sync-custom-date')->first()->id;
+        $imporSapDataPermissionId = DB::table('permissions')->where('name', 'impor-sap-data')->first()->id;
         // assign permission to roles
         $rolePermissions = [
             ['role_id' => $superadminRoleId, 'permission_id' => $aksesAdminPermissionId],
@@ -76,6 +90,8 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $superadminRoleId, 'permission_id' => $uploadConsignmentPermissionId],
             ['role_id' => $superadminRoleId, 'permission_id' => $crudConsignmentPermissionId],
             ['role_id' => $superadminRoleId, 'permission_id' => $searchConsignmentPermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $syncCustomDatePermissionId],
+            ['role_id' => $superadminRoleId, 'permission_id' => $imporSapDataPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesAdminPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesPermissionPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $aksesUserPermissionId],
@@ -88,6 +104,8 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $adminRoleId, 'permission_id' => $uploadConsignmentPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $crudConsignmentPermissionId],
             ['role_id' => $adminRoleId, 'permission_id' => $searchConsignmentPermissionId],
+            ['role_id' => $adminRoleId, 'permission_id' => $syncCustomDatePermissionId],
+            ['role_id' => $adminRoleId, 'permission_id' => $imporSapDataPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesMasterPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $aksesApprovalPermissionId],
@@ -99,6 +117,7 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $adminprocRoleId, 'permission_id' => $uploadConsignmentPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $crudConsignmentPermissionId],
             ['role_id' => $adminprocRoleId, 'permission_id' => $searchConsignmentPermissionId],
+            ['role_id' => $adminprocRoleId, 'permission_id' => $imporSapDataPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcurementPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesReportPermissionId],
             ['role_id' => $buyerRoleId, 'permission_id' => $aksesProcPrPermissionId],
@@ -113,59 +132,114 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => $directorRoleId, 'permission_id' => $viewPoservicePermissionId],
         ];
 
-        DB::table('role_has_permissions')->insert($rolePermissions);
+        foreach ($rolePermissions as $rolePermission) {
+            $exists = DB::table('role_has_permissions')
+                ->where('role_id', $rolePermission['role_id'])
+                ->where('permission_id', $rolePermission['permission_id'])
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('role_has_permissions')->insert($rolePermission);
+            }
+        }
 
         $user = DB::table('users')->where('username', 'superadmin')->first();
         if ($user) {
-            DB::table('model_has_roles')->insert([
-                'role_id' => $superadminRoleId,
-                'model_id' => $user->id,
-                'model_type' => 'App\Models\User',
-            ]);
+            $exists = DB::table('model_has_roles')
+                ->where('role_id', $superadminRoleId)
+                ->where('model_id', $user->id)
+                ->where('model_type', 'App\Models\User')
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('model_has_roles')->insert([
+                    'role_id' => $superadminRoleId,
+                    'model_id' => $user->id,
+                    'model_type' => 'App\Models\User',
+                ]);
+            }
         }
 
         $userBuyer = DB::table('users')->where('username', 'buyer1')->first();
         if ($userBuyer) {
-            DB::table('model_has_roles')->insert([
-                'role_id' => $buyerRoleId,
-                'model_id' => $userBuyer->id,
-                'model_type' => 'App\Models\User',
-            ]);
+            $exists = DB::table('model_has_roles')
+                ->where('role_id', $buyerRoleId)
+                ->where('model_id', $userBuyer->id)
+                ->where('model_type', 'App\Models\User')
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('model_has_roles')->insert([
+                    'role_id' => $buyerRoleId,
+                    'model_id' => $userBuyer->id,
+                    'model_type' => 'App\Models\User',
+                ]);
+            }
         }
 
         $userProcMgr = DB::table('users')->where('username', 'procmgr')->first();
         if ($userProcMgr) {
-            DB::table('model_has_roles')->insert([
-                'role_id' => $adminprocRoleId,
-                'model_id' => $userProcMgr->id,
-                'model_type' => 'App\Models\User',
-            ]);
+            $exists = DB::table('model_has_roles')
+                ->where('role_id', $adminprocRoleId)
+                ->where('model_id', $userProcMgr->id)
+                ->where('model_type', 'App\Models\User')
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('model_has_roles')->insert([
+                    'role_id' => $adminprocRoleId,
+                    'model_id' => $userProcMgr->id,
+                    'model_type' => 'App\Models\User',
+                ]);
+            }
         }
 
         $userDirector = DB::table('users')->where('username', 'director')->first();
         if ($userDirector) {
-            DB::table('model_has_roles')->insert([
-                'role_id' => $directorRoleId,
-                'model_id' => $userDirector->id,
-                'model_type' => 'App\Models\User',
-            ]);
+            $exists = DB::table('model_has_roles')
+                ->where('role_id', $directorRoleId)
+                ->where('model_id', $userDirector->id)
+                ->where('model_type', 'App\Models\User')
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('model_has_roles')->insert([
+                    'role_id' => $directorRoleId,
+                    'model_id' => $userDirector->id,
+                    'model_type' => 'App\Models\User',
+                ]);
+            }
         }
 
         $approvalLevel1 = DB::table('approval_levels')->where('level', 1)->first();
         $approvalLevel2 = DB::table('approval_levels')->where('level', 2)->first();
 
-        if ($approvalLevel1) {
-            DB::table('approvers')->insert([
-                'user_id' => $userProcMgr->id,
-                'approval_level_id' => $approvalLevel1->id,
-            ]);
+        if ($approvalLevel1 && $userProcMgr) {
+            $exists = DB::table('approvers')
+                ->where('user_id', $userProcMgr->id)
+                ->where('approval_level_id', $approvalLevel1->id)
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('approvers')->insert([
+                    'user_id' => $userProcMgr->id,
+                    'approval_level_id' => $approvalLevel1->id,
+                ]);
+            }
         }
 
-        if ($approvalLevel2) {
-            DB::table('approvers')->insert([
-                'user_id' => $userDirector->id,
-                'approval_level_id' => $approvalLevel2->id,
-            ]);
+        if ($approvalLevel2 && $userDirector) {
+            $exists = DB::table('approvers')
+                ->where('user_id', $userDirector->id)
+                ->where('approval_level_id', $approvalLevel2->id)
+                ->exists();
+            
+            if (!$exists) {
+                DB::table('approvers')->insert([
+                    'user_id' => $userDirector->id,
+                    'approval_level_id' => $approvalLevel2->id,
+                ]);
+            }
         }
     }
 }

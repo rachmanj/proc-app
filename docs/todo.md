@@ -2,7 +2,7 @@ Keep your task management simple and focused on what you're actually working on:
 
 ```markdown
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-17
 
 ## Task Management Guidelines
 
@@ -56,6 +56,11 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Implement SAP B1 Direct SQL Server Sync for PR and PO data [app/Services/SapService.php, app/Http/Controllers/Master/SyncWithSapController.php, database/migrations, resources/views/master/sync-with-sap] (completed: 2025-11-17)`
+-   `[done] P1: Add consolidated sync interface with date range selection and auto-conversion [app/Http/Controllers/Master/SyncWithSapController.php, resources/views/master/sync-with-sap] (completed: 2025-11-17)`
+-   `[done] P1: Implement sync logging and history tracking [database/migrations, app/Models/SyncLog.php] (completed: 2025-11-17)`
+-   `[done] P2: Add permission-based access control for sync features [database/seeders/RolePermissionSeeder.php, resources/views] (completed: 2025-11-17)`
+-   `[done] P2: Update menu structure and login page for v2.2 [resources/views/layout/partials/menu/master.blade.php, resources/views/auth/login/index.blade.php] (completed: 2025-11-17)`
 -   `[done] P1: Implement DataTables for item price search [resources/views/consignment/item-prices/search.blade.php, app/Http/Controllers/Consignment/ItemPriceController.php] (completed: 2025-08-03)`
 -   `[done] P2: Add part number search functionality to consignment search [resources/views/consignment/item-prices/search.blade.php, app/Http/Controllers/Consignment/ItemPriceController.php] (completed: 2025-08-03)`
 -   `[done] P0: Implement consignment item price tracking feature [database, models, controllers, views] (completed: 2025-08-02)`
@@ -65,6 +70,12 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Quick Notes
 
+-   **SAP B1 Direct Sync (v2.2)**: New feature allows direct synchronization of PR and PO data from SAP B1 SQL Server, eliminating manual Excel imports
+-   **Consolidated Sync Interface**: Single page for both PR and PO sync with date range selection (TODAY, YESTERDAY, CUSTOM)
+-   **Auto-Conversion**: Data automatically converts from temp tables to main tables after successful sync
+-   **Sync Logging**: All sync operations are logged in sync_logs table with status, record counts, and error messages
+-   **Permission System**: New permissions `sync-custom-date` and `impor-sap-data` for fine-grained access control
+-   **Menu Updates**: "Master" menu renamed to "Sync Data" with "Sync With SAP" as primary option
 -   New consignment feature allows tracking item prices with history
 -   Item price search now uses DataTables for enhanced user experience with sorting, filtering, and export options
 -   Part number search added to consignment search functionality
