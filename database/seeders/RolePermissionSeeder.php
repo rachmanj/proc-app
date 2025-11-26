@@ -152,11 +152,11 @@ class RolePermissionSeeder extends Seeder
                 ->exists();
             
             if (!$exists) {
-                DB::table('model_has_roles')->insert([
-                    'role_id' => $superadminRoleId,
-                    'model_id' => $user->id,
-                    'model_type' => 'App\Models\User',
-                ]);
+            DB::table('model_has_roles')->insert([
+                'role_id' => $superadminRoleId,
+                'model_id' => $user->id,
+                'model_type' => 'App\Models\User',
+            ]);
             }
         }
 
@@ -169,11 +169,11 @@ class RolePermissionSeeder extends Seeder
                 ->exists();
             
             if (!$exists) {
-                DB::table('model_has_roles')->insert([
-                    'role_id' => $buyerRoleId,
-                    'model_id' => $userBuyer->id,
-                    'model_type' => 'App\Models\User',
-                ]);
+            DB::table('model_has_roles')->insert([
+                'role_id' => $buyerRoleId,
+                'model_id' => $userBuyer->id,
+                'model_type' => 'App\Models\User',
+            ]);
             }
         }
 
@@ -186,11 +186,11 @@ class RolePermissionSeeder extends Seeder
                 ->exists();
             
             if (!$exists) {
-                DB::table('model_has_roles')->insert([
-                    'role_id' => $adminprocRoleId,
-                    'model_id' => $userProcMgr->id,
-                    'model_type' => 'App\Models\User',
-                ]);
+            DB::table('model_has_roles')->insert([
+                'role_id' => $adminprocRoleId,
+                'model_id' => $userProcMgr->id,
+                'model_type' => 'App\Models\User',
+            ]);
             }
         }
 
@@ -203,11 +203,11 @@ class RolePermissionSeeder extends Seeder
                 ->exists();
             
             if (!$exists) {
-                DB::table('model_has_roles')->insert([
-                    'role_id' => $directorRoleId,
-                    'model_id' => $userDirector->id,
-                    'model_type' => 'App\Models\User',
-                ]);
+            DB::table('model_has_roles')->insert([
+                'role_id' => $directorRoleId,
+                'model_id' => $userDirector->id,
+                'model_type' => 'App\Models\User',
+            ]);
             }
         }
 
@@ -221,11 +221,11 @@ class RolePermissionSeeder extends Seeder
                 ->exists();
             
             if (!$exists) {
-                DB::table('approvers')->insert([
-                    'user_id' => $userProcMgr->id,
-                    'approval_level_id' => $approvalLevel1->id,
-                ]);
-            }
+            DB::table('approvers')->insert([
+                'user_id' => $userProcMgr->id,
+                'approval_level_id' => $approvalLevel1->id,
+            ]);
+        }
         }
 
         if ($approvalLevel2 && $userDirector) {
@@ -235,10 +235,10 @@ class RolePermissionSeeder extends Seeder
                 ->exists();
             
             if (!$exists) {
-                DB::table('approvers')->insert([
-                    'user_id' => $userDirector->id,
-                    'approval_level_id' => $approvalLevel2->id,
-                ]);
+            DB::table('approvers')->insert([
+                'user_id' => $userDirector->id,
+                'approval_level_id' => $approvalLevel2->id,
+            ]);
             }
         }
     }

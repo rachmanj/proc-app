@@ -4,7 +4,10 @@ Declare @B AS DATETIME
 SET @A= /* a.CreateDate */ '[%0]'
 SET @B= /* a.CreateDate */ '[%1]'
 Select distinct
-A.draftKey [pr_draft_no]
+A.DocEntry [sap_doc_entry]
+,B.LineNum [sap_line_num]
+,B.VisOrder [sap_vis_order]
+,A.draftKey [pr_draft_no]
 ,A.DocNum [pr_no]
 ,A.DocDate [pr_date]
 ,A.CreateDate [generated_date]

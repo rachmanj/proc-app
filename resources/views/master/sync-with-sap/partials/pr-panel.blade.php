@@ -34,7 +34,7 @@
                             <button type="button" class="btn btn-sm btn-outline-primary" id="pr-custom-btn">CUSTOM</button>
                         @endcan
                     </div>
-                    <div id="pr-custom-date-range" style="display: none;">
+                    <div id="pr-custom-date-range" style="display: none;" class="mt-3">
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="pr-start-date">Start Date</label>
@@ -70,143 +70,175 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Set timezone to UTC+8 (Asia/Jakarta)
-    const timezone = 'Asia/Jakarta';
-    
-    function getTodayUTC8() {
-        return new Date(new Date().toLocaleString("en-US", {timeZone: timezone}));
-    }
-    
-    function formatDateForInput(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    // TODAY button
-    $('#pr-today-btn').on('click', function() {
-        const today = getTodayUTC8();
-        const dateStr = formatDateForInput(today);
-        $('#pr-selected-start-date').val(dateStr);
-        $('#pr-selected-end-date').val(dateStr);
-        $('#pr-custom-date-range').hide();
-        $(this).addClass('active').siblings().removeClass('active');
-    });
-
-    // YESTERDAY button
-    $('#pr-yesterday-btn').on('click', function() {
-        const yesterday = getTodayUTC8();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const dateStr = formatDateForInput(yesterday);
-        $('#pr-selected-start-date').val(dateStr);
-        $('#pr-selected-end-date').val(dateStr);
-        $('#pr-custom-date-range').hide();
-        $(this).addClass('active').siblings().removeClass('active');
-    });
-
-    // CUSTOM button
-    $('#pr-custom-btn').on('click', function() {
-        $('#pr-custom-date-range').toggle();
-        $(this).toggleClass('active');
-    });
-
-    // Custom date inputs
-    $('#pr-start-date, #pr-end-date').on('change', function() {
-        $('#pr-selected-start-date').val($('#pr-start-date').val());
-        $('#pr-selected-end-date').val($('#pr-end-date').val());
-        $('#pr-custom-btn').addClass('active');
-    });
-
-    // Sync button
-    $('#pr-sync-btn').on('click', function() {
-        const startDate = $('#pr-selected-start-date').val();
-        const endDate = $('#pr-selected-end-date').val();
-
-        if (!startDate || !endDate) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Date Range Required',
-                text: 'Please select a date range first',
-            });
-            return;
+    // Wait for tab to be shown before initializing
+    function initPrPanel() {
+        // Set timezone to UTC+8 (Asia/Jakarta)
+        const timezone = 'Asia/Jakarta';
+        
+        function getTodayUTC8() {
+            return new Date(new Date().toLocaleString("en-US", {timeZone: timezone}));
+        }
+        
+        function formatDateForInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
-        Swal.fire({
-            title: 'Syncing PR from SAP...',
-            text: 'Please wait while we fetch and process data.',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
+        // TODAY button
+        $('#pr-today-btn').off('click').on('click', function() {
+            const today = getTodayUTC8();
+            const dateStr = formatDateForInput(today);
+            $('#pr-selected-start-date').val(dateStr);
+            $('#pr-selected-end-date').val(dateStr);
+            $('#pr-custom-date-range').css('display', 'none');
+            $('#pr-custom-btn').removeClass('active');
+            $(this).addClass('active').siblings().removeClass('active');
+        });
+
+        // YESTERDAY button
+        $('#pr-yesterday-btn').off('click').on('click', function() {
+            const yesterday = getTodayUTC8();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const dateStr = formatDateForInput(yesterday);
+            $('#pr-selected-start-date').val(dateStr);
+            $('#pr-selected-end-date').val(dateStr);
+            $('#pr-custom-date-range').css('display', 'none');
+            $('#pr-custom-btn').removeClass('active');
+            $(this).addClass('active').siblings().removeClass('active');
+        });
+
+        // CUSTOM button
+        $('#pr-custom-btn').off('click').on('click', function() {
+            const $dateRange = $('#pr-custom-date-range');
+            const $btn = $(this);
+            const currentDisplay = $dateRange.css('display');
+            
+            if (currentDisplay === 'none' || !currentDisplay || currentDisplay === '') {
+                $dateRange.css('display', 'block');
+                $btn.addClass('active');
+                $('#pr-today-btn, #pr-yesterday-btn').removeClass('active');
+            } else {
+                $dateRange.css('display', 'none');
+                $btn.removeClass('active');
             }
         });
 
-        $.ajax({
-            url: "{{ route('master.sync-with-sap.sync-pr') }}",
-            type: 'POST',
-            data: {
-                start_date: startDate,
-                end_date: endDate,
-            },
-            success: function(response) {
-                Swal.fire({
-                    icon: response.success ? 'success' : 'warning',
-                    title: response.success ? 'Success!' : 'Warning',
-                    html: response.message,
-                    showConfirmButton: true
-                }).then(() => {
-                    location.reload();
-                });
-            },
-            error: function(xhr) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred while syncing data.',
-                    showConfirmButton: true
-                });
-            }
+        // Custom date inputs
+        $('#pr-start-date, #pr-end-date').off('change').on('change', function() {
+            $('#pr-selected-start-date').val($('#pr-start-date').val());
+            $('#pr-selected-end-date').val($('#pr-end-date').val());
+            $('#pr-custom-btn').addClass('active');
         });
+
+        // Sync button
+        $('#pr-sync-btn').off('click').on('click', function() {
+            const startDate = $('#pr-selected-start-date').val();
+            const endDate = $('#pr-selected-end-date').val();
+
+            if (!startDate || !endDate) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Date Range Required',
+                    text: 'Please select a date range first',
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Syncing PR from SAP...',
+                text: 'Please wait while we fetch and process data.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: "{{ route('master.sync-with-sap.sync-pr') }}",
+                type: 'POST',
+                data: {
+                    start_date: startDate,
+                    end_date: endDate,
+                },
+                success: function(response) {
+                    Swal.fire({
+                        icon: response.success ? 'success' : 'warning',
+                        title: response.success ? 'Success!' : 'Warning',
+                        html: response.message,
+                        showConfirmButton: true
+                    }).then(() => {
+                        location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred while syncing data.',
+                        showConfirmButton: true
+                    });
+                }
+            });
+        });
+
+        // Truncate button
+        $('#pr-truncate-btn').off('click').on('click', function() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will clear all data in the PR temporary table.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, clear it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('master.sync-with-sap.truncate-pr') }}",
+                        type: 'POST',
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: response.message,
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred.',
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Set default to TODAY
+        $('#pr-today-btn').click();
+    }
+
+    // Initialize when PR tab is shown
+    $('#pr-tab').on('shown.bs.tab', function() {
+        initPrPanel();
     });
 
-    // Truncate button
-    $('#pr-truncate-btn').on('click', function() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "This will clear all data in the PR temporary table.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, clear it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: "{{ route('master.sync-with-sap.truncate-pr') }}",
-                    type: 'POST',
-                    success: function(response) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: response.message,
-                        });
-                    },
-                    error: function(xhr) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: xhr.responseJSON ? xhr.responseJSON.message : 'An error occurred.',
-                        });
-                    }
-                });
+    // Also initialize if PR tab is already active
+    if ($('#pr-tab').hasClass('active')) {
+        initPrPanel();
+    } else {
+        // Wait a bit and check again
+        setTimeout(function() {
+            if ($('#pr-panel').hasClass('active') || $('#pr-panel').hasClass('show')) {
+                initPrPanel();
             }
-        });
-    });
-
-    // Set default to TODAY
-    $('#pr-today-btn').click();
+        }, 100);
+    }
 });
 </script>
 @endpush

@@ -204,23 +204,15 @@ class DailyPRController extends Controller
                         'item_name',
                         'quantity',
                         'uom',
-                        'line_remarks'
+                        'line_remarks',
+                        'sap_doc_entry',
+                        'sap_line_num',
+                        'sap_vis_order',
                     ])
                     ->get();
 
                 foreach ($prDetails as $detail) {
-                    $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
-
-                    PurchaseRequestDetail::create([
-                        'purchase_request_id' => $purchaseRequest->id,
-                        'item_code' => $detail->item_code,
-                        'item_name' => $detail->item_name,
-                        'quantity' => $quantity,
-                        'uom' => $detail->uom,
-                        'open_qty' => $quantity,
-                        'line_remarks' => $detail->line_remarks ?? '',
-                        'status' => 'OPEN'
-                    ]);
+                    $this->upsertPurchaseRequestDetail($purchaseRequest->id, $detail);
                 }
 
                 $importedCount++;
@@ -261,5 +253,48 @@ class DailyPRController extends Controller
                 'reload_page' => true
             ], 500);
         }
+    }
+
+    private function upsertPurchaseRequestDetail(int $purchaseRequestId, $detail): void
+    {
+        $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
+        $lineIdentity = $this->buildPrLineIdentity($purchaseRequestId, $detail);
+
+        $uniqueKeys = [
+            'purchase_request_id' => $purchaseRequestId,
+        ];
+
+        if (!is_null($detail->sap_doc_entry) && !is_null($detail->sap_line_num)) {
+            $uniqueKeys['sap_doc_entry'] = $detail->sap_doc_entry;
+            $uniqueKeys['sap_line_num'] = $detail->sap_line_num;
+        } else {
+            $uniqueKeys['line_identity'] = $lineIdentity;
+        }
+
+        PurchaseRequestDetail::updateOrCreate($uniqueKeys, [
+            'item_code' => $detail->item_code,
+            'item_name' => $detail->item_name,
+            'quantity' => $quantity,
+            'uom' => $detail->uom,
+            'open_qty' => $quantity,
+            'line_remarks' => $detail->line_remarks ?? '',
+            'status' => 'OPEN',
+            'sap_doc_entry' => $detail->sap_doc_entry,
+            'sap_line_num' => $detail->sap_line_num,
+            'sap_vis_order' => $detail->sap_vis_order,
+            'line_identity' => $lineIdentity,
+        ]);
+    }
+
+    private function buildPrLineIdentity(int $purchaseRequestId, $detail): string
+    {
+        return hash('sha1', json_encode([
+            'pr' => $purchaseRequestId,
+            'item_code' => $detail->item_code,
+            'item_name' => $detail->item_name,
+            'quantity' => $detail->quantity,
+            'uom' => $detail->uom,
+            'line_remarks' => $detail->line_remarks ?? '',
+        ]));
     }
 }

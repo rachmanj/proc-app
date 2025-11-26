@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-11-17
+Last Updated: 2025-11-26
 
 ## Architecture Documentation Guidelines
 
@@ -339,10 +339,11 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 -   **SAP B1 Direct SQL Server Sync** (v2.2)
     -   Direct synchronization with SAP B1 SQL Server for PR and PO data
     -   Consolidated sync interface for both PR and PO data types
-    -   Date range selection (TODAY, YESTERDAY, CUSTOM)
+    -   Date range selection (TODAY, YESTERDAY, CUSTOM) with UTC+8 timezone support
     -   Automatic conversion from temporary tables to main tables after sync
     -   Detailed sync logging and history tracking
     -   Permission-based access control (`sync-custom-date` for custom date ranges, `impor-sap-data` for import menu items)
+    -   **Identity tracking and duplicate prevention**: Uses SAP line identifiers (DocEntry, LineNum, VisOrder) to prevent duplicate detail rows during sync operations
 
 #### Models
 
@@ -354,10 +355,10 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 #### Services
 
 -   **SapService**: Handles SAP B1 SQL Server queries and data mapping
-    -   `executePoSqlQuery($startDate, $endDate)`: Executes PO SQL query from `database/list_po.sql`
-    -   `executePrSqlQuery($startDate, $endDate)`: Executes PR SQL query from `database/list_pr_generated.sql`
-    -   `mapPoResultToModel($row)`: Maps SQL results to PoTemp model
-    -   `mapPrResultToModel($row)`: Maps SQL results to PrTemp model
+    -   `executePoSqlQuery($startDate, $endDate)`: Executes PO SQL query from `database/list_po.sql` (includes SAP line identifiers: DocEntry, LineNum, VisOrder)
+    -   `executePrSqlQuery($startDate, $endDate)`: Executes PR SQL query from `database/list_pr_generated.sql` (includes SAP line identifiers: DocEntry, LineNum, VisOrder)
+    -   `mapPoResultToModel($row)`: Maps SQL results to PoTemp model including SAP identity fields
+    -   `mapPrResultToModel($row)`: Maps SQL results to PrTemp model including SAP identity fields
 
 #### Controllers
 
@@ -418,8 +419,10 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 #### purchase_request_details
 
 -   PR line items
--   Fields: id, purchase_request_id, item_code, item_name, quantity, uom, open_qty, line_remarks, purchase_order_detail_id, status, timestamps
+-   Fields: id, purchase_request_id, sap_doc_entry, sap_line_num, sap_vis_order, line_identity, item_code, item_name, quantity, uom, open_qty, line_remarks, purchase_order_detail_id, status, timestamps
+-   Unique constraints: (purchase_request_id, sap_doc_entry, sap_line_num) and (purchase_request_id, line_identity)
 -   Relationships: belongsTo PurchaseRequest, belongsTo PurchaseOrderDetail
+-   Identity tracking: Uses SAP line identifiers (DocEntry, LineNum, VisOrder) to prevent duplicate detail rows during sync
 
 #### purchase_orders
 
@@ -431,18 +434,24 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 #### purchase_order_details
 
 -   PO line items
--   Fields: id, purchase_order_id, item_code, description, remark1, remark2, qty, uom, unit_price, timestamps
+-   Fields: id, purchase_order_id, sap_doc_entry, sap_line_num, sap_vis_order, line_identity, item_code, description, remark1, remark2, qty, uom, unit_price, item_amount, timestamps
+-   Unique constraints: (purchase_order_id, sap_doc_entry, sap_line_num) and (purchase_order_id, line_identity)
 -   Relationships: belongsTo PurchaseOrder
+-   Identity tracking: Uses SAP line identifiers (DocEntry, LineNum, VisOrder) to prevent duplicate detail rows during sync
 
 #### po_temps
 
 -   Temporary PO data for imports
--   Used for importing PO data from Excel before creating actual POs
+-   Fields: Includes sap_doc_entry, sap_line_num, sap_vis_order, line_identity for identity tracking
+-   Used for importing PO data from Excel or SAP B1 sync before creating actual POs
+-   Identity tracking: Stores SAP line identifiers to enable duplicate prevention during conversion
 
 #### pr_temps
 
 -   Temporary PR data for imports
+-   Fields: Includes sap_doc_entry, sap_line_num, sap_vis_order, line_identity for identity tracking
 -   Used for importing PR data from Excel or SAP B1 sync before creating actual PRs
+-   Identity tracking: Stores SAP line identifiers to enable duplicate prevention during conversion
 
 #### sync_logs
 
@@ -637,17 +646,23 @@ graph TD
     B --> C[SyncWithSapController]
     C --> D[SapService.executeSqlQuery]
     D --> E[SAP B1 SQL Server]
-    E --> F[Query Results]
-    F --> G[Map to Temp Model]
+    E --> F[Query Results with Line Identifiers]
+    F --> G[Map to Temp Model with Identity Fields]
     G --> H[Truncate Temp Table]
-    H --> I[Insert to pr_temps/po_temps]
+    H --> I[Insert to pr_temps/po_temps with SAP IDs]
     I --> J[Create SyncLog Entry]
     J --> K[Auto-Convert to Main Table]
-    K --> L{Conversion Success?}
-    L -->|Yes| M[Update SyncLog: Success]
-    L -->|No| N[Update SyncLog: Failed]
-    M --> O[Display Results to User]
-    N --> O
+    K --> L[Upsert Details using Identity Keys]
+    L --> M{SAP IDs Available?}
+    M -->|Yes| N[Use sap_doc_entry + sap_line_num]
+    M -->|No| O[Use line_identity hash]
+    N --> P[updateOrCreate with Identity]
+    O --> P
+    P --> Q{Conversion Success?}
+    Q -->|Yes| R[Update SyncLog: Success]
+    Q -->|No| S[Update SyncLog: Failed]
+    R --> T[Display Results to User]
+    S --> T
 ```
 
 ### Consignment Item Price Flow
@@ -725,6 +740,15 @@ graph TD
 -   **Permission-based**: Routes protected by Spatie Permission middleware
 
 ## Artisan Commands
+
+### SAP Sync Commands
+
+1. **sap:dump-po**
+
+    - Dumps raw PO data from SAP SQL Server for debugging and analysis
+    - Options: `--start`, `--end`, `--po`, `--limit`, `--path`, `--no-file`
+    - Location: `app/Console/Commands/DumpSapPoDataCommand.php`
+    - Usage: `php artisan sap:dump-po --start=2025-11-24 --end=2025-11-24 --po=250207650 --limit=5`
 
 ### Data Migration Commands
 

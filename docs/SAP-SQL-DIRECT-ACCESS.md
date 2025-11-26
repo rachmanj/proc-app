@@ -1,7 +1,7 @@
 # SAP B1 Direct SQL Server Access
 
 ## Date: 2025-11-13  
-## Updated: 2025-11-17 (v2.2 - PR/PO Sync Implementation)
+## Updated: 2025-11-26 (v2.2 - Identity Tracking & Duplicate Prevention)
 
 ## Overview
 
@@ -143,8 +143,69 @@ The SAP B1 Direct SQL Server access has been extended to support PR and PO data 
 4. Click "Sync PR Data" or "Sync PO Data"
 5. System automatically:
    - Queries SAP B1 SQL Server
-   - Populates temporary tables
-   - Converts to main tables
+   - Populates temporary tables with SAP line identifiers
+   - Converts to main tables using identity-based deduplication
    - Logs the operation
    - Displays results
+
+## v2.2 Identity Tracking & Duplicate Prevention (2025-11-26)
+
+### Problem Solved
+
+During SAP sync operations, duplicate PR and PO detail rows were being created when:
+- The same data was synced multiple times
+- SAP returned seemingly identical rows that differed only in metadata not captured by the application
+- This caused inconsistencies between SAP exports and application data
+
+### Solution: SAP Line Identity Tracking
+
+Implemented identity tracking using SAP's native line identifiers to prevent duplicate detail rows:
+
+**For PO Data:**
+- SQL query (`database/list_po.sql`) now includes: `B.DocEntry [sap_doc_entry]`, `B.LineNum [sap_line_num]`, `B.VisOrder [sap_vis_order]`
+- `po_temps` and `purchase_order_details` tables store these identifiers
+- Unique constraint: `(purchase_order_id, sap_doc_entry, sap_line_num)`
+- Fallback unique constraint: `(purchase_order_id, line_identity)` for Excel imports
+
+**For PR Data:**
+- SQL query (`database/list_pr_generated.sql`) now includes: `A.DocEntry [sap_doc_entry]`, `B.LineNum [sap_line_num]`, `B.VisOrder [sap_vis_order]`
+- `pr_temps` and `purchase_request_details` tables store these identifiers
+- Unique constraint: `(purchase_request_id, sap_doc_entry, sap_line_num)`
+- Fallback unique constraint: `(purchase_request_id, line_identity)` for Excel imports
+
+### Implementation Details
+
+**Database Changes:**
+- Migration: `2025_11_25_081404_add_sap_line_identity_to_po_tables.php`
+- Migration: `2025_11_26_022512_add_sap_line_identity_to_pr_tables.php`
+- Added columns: `sap_doc_entry`, `sap_line_num`, `sap_vis_order`, `line_identity` (hash for Excel imports)
+
+**Service Updates:**
+- `SapService::mapPoResultToModel()` and `mapPrResultToModel()` now include identity fields
+- `POTempImport` and `PRTempImport` handle identity fields (nullable for Excel imports)
+
+**Conversion Logic:**
+- `SyncWithSapController::upsertPurchaseOrderDetail()` and `upsertPurchaseRequestDetail()` use identity-based unique keys
+- Uses SAP IDs when available, falls back to hash-based `line_identity` for Excel imports
+- `updateOrCreate` ensures idempotent sync operations
+
+**Benefits:**
+- ✅ Prevents duplicate detail rows during sync operations
+- ✅ Ensures consistency between SAP exports and application data
+- ✅ Works with both SAP sync and Excel imports (with fallback)
+- ✅ Database-level enforcement via unique constraints
+- ✅ Idempotent sync operations (safe to re-run)
+
+### Debugging Tools
+
+**Artisan Command:**
+```bash
+php artisan sap:dump-po --start=YYYY-MM-DD --end=YYYY-MM-DD [--po=PO_NUMBER] [--limit=N] [--path=custom/path.json] [--no-file]
+```
+
+This command allows direct inspection of raw SAP PO data before conversion, useful for:
+- Validating SQL query results
+- Analyzing data structure
+- Debugging duplicate issues
+- Comparing with SAP exports
 

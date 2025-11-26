@@ -1,5 +1,5 @@
 **Purpose**: Record technical decisions and rationale for future reference
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-11-26
 
 # Technical Decision Records
 
@@ -148,3 +148,45 @@ Decision: SAP B1 Direct SQL Server Sync Implementation - 2025-11-17
 - Removed individual "Sync from SAP" buttons from PR and PO import pages
 
 **Review Date**: 2026-02-17 (3 months)
+
+---
+
+Decision: SAP Line Identity Tracking for Duplicate Prevention - 2025-11-26
+
+**Context**: During SAP sync operations, duplicate PO and PR detail rows were being created when the same data was synced multiple times or when SAP returned seemingly identical rows that differed only in metadata not captured by the application. This caused data integrity issues and inconsistencies between SAP exports and application data.
+
+**Options Considered**:
+
+1. **Option A**: Use business logic fields (item_code, qty, description) for deduplication
+    - ✅ Pros: No schema changes needed, works with Excel imports
+    - ❌ Cons: Cannot distinguish between legitimate duplicate items, fails when SAP returns identical rows with different line numbers
+
+2. **Option B**: Add SAP line identifiers (DocEntry, LineNum, VisOrder) and use them for deduplication
+    - ✅ Pros: Matches SAP's native line identification, prevents true duplicates, works with both SAP sync and Excel imports (with fallback)
+    - ❌ Cons: Requires schema changes, SQL queries need updates, migration needed
+
+3. **Option C**: Aggregate identical lines during conversion
+    - ✅ Pros: Reduces data volume
+    - ❌ Cons: Loses line-level detail, may hide legitimate separate lines, complex aggregation logic
+
+**Decision**: Implemented Option B - SAP line identity tracking with fallback to hash-based identity
+
+**Rationale**:
+- SAP's native line identifiers (DocEntry, LineNum, VisOrder) provide unique identification for each detail line
+- Allows precise duplicate detection matching SAP's own line numbering system
+- Fallback to hash-based `line_identity` ensures Excel imports (which may not have SAP IDs) still work
+- Unique database constraints enforce data integrity at the database level
+- `updateOrCreate` logic in conversion ensures idempotent sync operations
+
+**Implementation**:
+- Updated `database/list_po.sql` and `database/list_pr_generated.sql` to include SAP line identifiers
+- Added migrations to add `sap_doc_entry`, `sap_line_num`, `sap_vis_order`, and `line_identity` columns to:
+  - `po_temps` and `purchase_order_details` tables
+  - `pr_temps` and `purchase_request_details` tables
+- Added unique constraints: `(purchase_order_id, sap_doc_entry, sap_line_num)` and `(purchase_order_id, line_identity)`
+- Updated `SapService::mapPoResultToModel()` and `mapPrResultToModel()` to include identity fields
+- Modified `POTempImport` and `PRTempImport` to handle identity fields (nullable for Excel imports)
+- Updated conversion logic in `SyncWithSapController` and `DailyPRController` to use `updateOrCreate` with identity-based unique keys
+- Created `upsertPurchaseOrderDetail()` and `upsertPurchaseRequestDetail()` methods that use SAP IDs when available, fallback to hash when not
+
+**Review Date**: 2026-02-26 (3 months)

@@ -309,23 +309,15 @@ class SyncWithSapController extends Controller
                         'item_name',
                         'quantity',
                         'uom',
-                        'line_remarks'
+                        'line_remarks',
+                        'sap_doc_entry',
+                        'sap_line_num',
+                        'sap_vis_order',
                     ])
                     ->get();
 
                 foreach ($prDetails as $detail) {
-                    $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
-
-                    PurchaseRequestDetail::create([
-                        'purchase_request_id' => $purchaseRequest->id,
-                        'item_code' => $detail->item_code,
-                        'item_name' => $detail->item_name,
-                        'quantity' => $quantity,
-                        'uom' => $detail->uom,
-                        'open_qty' => $quantity,
-                        'line_remarks' => $detail->line_remarks ?? '',
-                        'status' => 'OPEN'
-                    ]);
+                    $this->upsertPurchaseRequestDetail($purchaseRequest->id, $detail);
                 }
 
                 $importedCount++;
@@ -439,22 +431,15 @@ class SyncWithSapController extends Controller
                         'qty',
                         'uom',
                         'unit_price',
-                        'item_amount'
+                        'item_amount',
+                        'sap_doc_entry',
+                        'sap_line_num',
+                        'sap_vis_order',
                     ])
                     ->get();
 
                 foreach ($poDetails as $detail) {
-                    PurchaseOrderDetail::create([
-                        'purchase_order_id' => $purchaseOrder->id,
-                        'item_code' => $detail->item_code,
-                        'description' => $detail->description,
-                        'remark1' => $detail->remark1,
-                        'remark2' => $detail->remark2,
-                        'qty' => $detail->qty,
-                        'uom' => $detail->uom,
-                        'unit_price' => $detail->unit_price,
-                        'item_amount' => $detail->item_amount,
-                    ]);
+                    $this->upsertPurchaseOrderDetail($purchaseOrder->id, $detail);
                 }
 
                 $importedCount++;
@@ -511,5 +496,92 @@ class SyncWithSapController extends Controller
                 'message' => 'Error clearing PO temporary table: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function upsertPurchaseOrderDetail(int $purchaseOrderId, $detail): void
+    {
+        $lineIdentity = $this->buildLineIdentity($purchaseOrderId, $detail);
+
+        $uniqueKeys = [
+            'purchase_order_id' => $purchaseOrderId,
+        ];
+
+        if (!is_null($detail->sap_doc_entry) && !is_null($detail->sap_line_num)) {
+            $uniqueKeys['sap_doc_entry'] = $detail->sap_doc_entry;
+            $uniqueKeys['sap_line_num'] = $detail->sap_line_num;
+        } else {
+            $uniqueKeys['line_identity'] = $lineIdentity;
+        }
+
+        PurchaseOrderDetail::updateOrCreate($uniqueKeys, [
+            'item_code' => $detail->item_code,
+            'description' => $detail->description,
+            'remark1' => $detail->remark1,
+            'remark2' => $detail->remark2,
+            'qty' => $detail->qty,
+            'uom' => $detail->uom,
+            'unit_price' => $detail->unit_price,
+            'item_amount' => $detail->item_amount,
+            'sap_doc_entry' => $detail->sap_doc_entry,
+            'sap_line_num' => $detail->sap_line_num,
+            'sap_vis_order' => $detail->sap_vis_order,
+            'line_identity' => $lineIdentity,
+        ]);
+    }
+
+    private function buildLineIdentity(int $purchaseOrderId, $detail): string
+    {
+        return hash('sha1', json_encode([
+            'po' => $purchaseOrderId,
+            'item_code' => $detail->item_code,
+            'description' => $detail->description,
+            'remark1' => $detail->remark1,
+            'remark2' => $detail->remark2,
+            'qty' => $detail->qty,
+            'unit_price' => $detail->unit_price,
+        ]));
+    }
+
+    private function upsertPurchaseRequestDetail(int $purchaseRequestId, $detail): void
+    {
+        $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
+        $lineIdentity = $this->buildPrLineIdentity($purchaseRequestId, $detail);
+
+        $uniqueKeys = [
+            'purchase_request_id' => $purchaseRequestId,
+        ];
+
+        if (!is_null($detail->sap_doc_entry) && !is_null($detail->sap_line_num)) {
+            $uniqueKeys['sap_doc_entry'] = $detail->sap_doc_entry;
+            $uniqueKeys['sap_line_num'] = $detail->sap_line_num;
+        } else {
+            $uniqueKeys['line_identity'] = $lineIdentity;
+        }
+
+        PurchaseRequestDetail::updateOrCreate($uniqueKeys, [
+            'item_code' => $detail->item_code,
+            'item_name' => $detail->item_name,
+            'quantity' => $quantity,
+            'uom' => $detail->uom,
+            'open_qty' => $quantity,
+            'line_remarks' => $detail->line_remarks ?? '',
+            'status' => 'OPEN',
+            'sap_doc_entry' => $detail->sap_doc_entry,
+            'sap_line_num' => $detail->sap_line_num,
+            'sap_vis_order' => $detail->sap_vis_order,
+            'line_identity' => $lineIdentity,
+        ]);
+    }
+
+    private function buildPrLineIdentity(int $purchaseRequestId, $detail): string
+    {
+        return hash('sha1', json_encode([
+            'pr' => $purchaseRequestId,
+            'item_code' => $detail->item_code,
+            'item_name' => $detail->item_name,
+            'quantity' => $detail->quantity,
+            'uom' => $detail->uom,
+            'line_remarks' => $detail->line_remarks ?? '',
+        ]));
     }
 }

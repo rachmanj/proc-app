@@ -39,7 +39,7 @@
                     <!-- PR Panel -->
                     <div class="tab-pane fade show active" id="pr-panel" role="tabpanel">
                         @include('master.sync-with-sap.partials.pr-panel', ['lastSync' => $lastPrSync])
-                    </div>
+</div>
 
                     <!-- PO Panel -->
                     <div class="tab-pane fade" id="po-panel" role="tabpanel">

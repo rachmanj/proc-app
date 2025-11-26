@@ -11,6 +11,10 @@ class PurchaseRequestDetail extends Model
 
     protected $fillable = [
         'purchase_request_id',
+        'sap_doc_entry',
+        'sap_line_num',
+        'sap_vis_order',
+        'line_identity',
         'item_code',
         'item_name',
         'quantity',

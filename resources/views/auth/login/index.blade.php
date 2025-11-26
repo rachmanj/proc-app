@@ -80,17 +80,17 @@
 
         <!-- What's New Section -->
         <div class="card mt-3" id="whatsNewCard">
-            <div class="card-header p-2" style="cursor: pointer;" data-toggle="collapse" data-target="#whatsNewContent" aria-expanded="false">
+            <div class="card-header p-2" style="cursor: pointer;" data-toggle="collapse" data-target="#whatsNewContent" aria-expanded="false" aria-controls="whatsNewContent" role="button">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-star text-warning"></i> 
                     <strong>What's New</strong>
-                    <small class="text-muted">- Recent Improvements</small>
+                    <small class="text-muted">- Recent Improvements (v2.2)</small>
                     <span class="float-right">
                         <i class="fas fa-chevron-down" id="whatsNewIcon"></i>
                     </span>
                 </h5>
             </div>
-            <div id="whatsNewContent" class="collapse">
+            <div id="whatsNewContent" class="collapse" aria-labelledby="whatsNewHeader">
                 <div class="card-body p-3">
                     <div class="row">
                         <div class="col-md-6 mb-2">
@@ -151,8 +151,17 @@
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-sync-alt text-info mr-2 mt-1"></i>
                                 <div>
-                                    <strong>SAP B1 Direct Sync</strong>
-                                    <small class="d-block text-muted">Direct synchronization with SAP B1 SQL Server for PR and PO data</small>
+                                    <strong>SAP B1 Direct Sync (v2.2)</strong>
+                                    <small class="d-block text-muted">Direct SQL Server sync for PR/PO data with auto-conversion, date range selection, and duplicate prevention</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-shield-alt text-success mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Enhanced Data Integrity</strong>
+                                    <small class="d-block text-muted">SAP line identity tracking prevents duplicate PR/PO details during sync</small>
                                 </div>
                             </div>
                         </div>
@@ -182,18 +191,26 @@
             if (dismissed === 'true') {
                 $('#whatsNewCard').hide();
             } else {
-                // Auto-expand on first visit (optional)
-                // $('#whatsNewContent').collapse('show');
+                // Auto-expand on first visit to show new features
+                $('#whatsNewContent').collapse('show');
             }
 
             // Handle collapse icon rotation
             $('#whatsNewContent').on('show.bs.collapse', function() {
                 $('#whatsNewIcon').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                $('[data-target="#whatsNewContent"]').attr('aria-expanded', 'true');
             });
 
             $('#whatsNewContent').on('hide.bs.collapse', function() {
                 $('#whatsNewIcon').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                $('[data-target="#whatsNewContent"]').attr('aria-expanded', 'false');
             });
+
+            // Update icon on initial load if expanded
+            if ($('#whatsNewContent').hasClass('show')) {
+                $('#whatsNewIcon').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                $('[data-target="#whatsNewContent"]').attr('aria-expanded', 'true');
+            }
 
             // Dismiss button functionality
             $('#dismissWhatsNew').on('click', function() {

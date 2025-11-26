@@ -2,7 +2,7 @@ Keep your task management simple and focused on what you're actually working on:
 
 ```markdown
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-11-26
 
 ## Task Management Guidelines
 
@@ -56,6 +56,10 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Implement SAP line identity tracking for duplicate prevention [database/migrations, app/Services/SapService.php, app/Http/Controllers/Master/SyncWithSapController.php, app/Http/Controllers/Master/DailyPRController.php, app/Http/Controllers/Master/POTempController.php, app/Imports] (completed: 2025-11-26)`
+-   `[done] P2: Fix date input visibility issues in sync panels [resources/views/master/sync-with-sap/partials/pr-panel.blade.php, resources/views/master/sync-with-sap/partials/po-panel.blade.php] (completed: 2025-11-26)`
+-   `[done] P2: Replace CDN assets with local assets [resources/views/layout/partials/head.blade.php, resources/views/layout/partials/script.blade.php] (completed: 2025-11-26)`
+-   `[done] P2: Enhance login page "What's New" section [resources/views/auth/login/index.blade.php] (completed: 2025-11-26)`
 -   `[done] P1: Implement SAP B1 Direct SQL Server Sync for PR and PO data [app/Services/SapService.php, app/Http/Controllers/Master/SyncWithSapController.php, database/migrations, resources/views/master/sync-with-sap] (completed: 2025-11-17)`
 -   `[done] P1: Add consolidated sync interface with date range selection and auto-conversion [app/Http/Controllers/Master/SyncWithSapController.php, resources/views/master/sync-with-sap] (completed: 2025-11-17)`
 -   `[done] P1: Implement sync logging and history tracking [database/migrations, app/Models/SyncLog.php] (completed: 2025-11-17)`
@@ -71,11 +75,15 @@ Include relevant context in brackets to help with future AI-assisted coding:
 ## Quick Notes
 
 -   **SAP B1 Direct Sync (v2.2)**: New feature allows direct synchronization of PR and PO data from SAP B1 SQL Server, eliminating manual Excel imports
--   **Consolidated Sync Interface**: Single page for both PR and PO sync with date range selection (TODAY, YESTERDAY, CUSTOM)
+-   **Consolidated Sync Interface**: Single page for both PR and PO sync with date range selection (TODAY, YESTERDAY, CUSTOM) with UTC+8 timezone support
 -   **Auto-Conversion**: Data automatically converts from temp tables to main tables after successful sync
 -   **Sync Logging**: All sync operations are logged in sync_logs table with status, record counts, and error messages
 -   **Permission System**: New permissions `sync-custom-date` and `impor-sap-data` for fine-grained access control
 -   **Menu Updates**: "Master" menu renamed to "Sync Data" with "Sync With SAP" as primary option
+-   **Identity Tracking (v2.2)**: SAP line identifiers (DocEntry, LineNum, VisOrder) prevent duplicate PR/PO detail rows during sync operations
+-   **Data Integrity**: Unique constraints and upsert logic ensure idempotent sync operations and prevent duplicates
+-   **Local Assets**: Replaced CDN dependencies (moment.js, daterangepicker) with local assets for better reliability
+-   **UI Improvements**: Fixed date input visibility issues in sync panels with proper tab initialization handling
 -   New consignment feature allows tracking item prices with history
 -   Item price search now uses DataTables for enhanced user experience with sorting, filtering, and export options
 -   Part number search added to consignment search functionality

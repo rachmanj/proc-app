@@ -34,10 +34,7 @@ When 'C' Then CASE A.Canceled WHEN 'Y' THEN 'Cancelled' ELSE 'Closed' END
 Else A.DocStatus End 
 as [po_status],
 CASE A.U_ARK_DelivStat WHEN 'Y' THEN 'Delivered' WHEN 'N' THEN 'Not Delivered' END [po_delivery_status],
-A.U_ARK_BudgetType as [budget_type],
-B.DocEntry as [sap_doc_entry],
-B.LineNum as [sap_line_num],
-B.VisOrder as [sap_vis_order]
+A.U_ARK_BudgetType as [budget_type]
 --D.DocNum as [grpo_no]
 	FROM OPOR A
 	INNER JOIN POR1 B ON A.DocEntry = B.DocEntry

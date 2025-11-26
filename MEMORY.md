@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-11-26
 
 ## Memory Maintenance Guidelines
 
@@ -62,3 +62,11 @@
 -   **Key Learning**: Direct SQL access overcomes OData limitations; consolidated UI improves UX; auto-conversion eliminates manual steps
 -   **Impact**: Eliminated manual Excel import process, reduced errors, improved data freshness, provided audit trail via sync_logs table
 -   **Technical Details**: Created SapService for SQL queries, SyncWithSapController for consolidated interface, sync_logs table for tracking, permission-based access control
+
+### SAP Line Identity Tracking for Duplicate Prevention (2025-11-26) ✅ COMPLETE
+
+-   **Challenge**: Duplicate PR/PO detail rows created during SAP sync operations, causing data integrity issues and inconsistencies with SAP exports
+-   **Solution**: Implemented SAP line identity tracking using DocEntry, LineNum, and VisOrder from SAP, with hash-based fallback for Excel imports
+-   **Key Learning**: SAP's native line identifiers provide unique identification; unique database constraints enforce integrity; updateOrCreate with identity keys ensures idempotent syncs
+-   **Impact**: Eliminated duplicate detail rows, ensured consistency between SAP exports and application data, improved data integrity
+-   **Technical Details**: Added identity columns to po_temps, pr_temps, purchase_order_details, purchase_request_details; updated SQL queries to include SAP line identifiers; implemented upsert logic with identity-based unique keys; added unique constraints at database level

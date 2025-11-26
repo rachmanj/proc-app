@@ -141,6 +141,9 @@ class SapService
             'po_status' => $row->po_status ?? null,
             'po_delivery_status' => $row->po_delivery_status ?? null,
             'budget_type' => $row->budget_type ?? null,
+            'sap_doc_entry' => $row->sap_doc_entry ?? null,
+            'sap_line_num' => $row->sap_line_num ?? null,
+            'sap_vis_order' => $row->sap_vis_order ?? null,
         ];
     }
 
@@ -153,6 +156,9 @@ class SapService
     public function mapPrResultToModel($row)
     {
         return [
+            'sap_doc_entry' => $row->sap_doc_entry ?? null,
+            'sap_line_num' => $row->sap_line_num ?? null,
+            'sap_vis_order' => $row->sap_vis_order ?? null,
             'pr_draft_no' => $row->pr_draft_no ?? null,
             'pr_no' => $row->pr_no ?? null,
             'pr_date' => $this->convertSqlDate($row->pr_date ?? null),
