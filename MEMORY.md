@@ -70,3 +70,10 @@
 -   **Key Learning**: SAP's native line identifiers provide unique identification; unique database constraints enforce integrity; updateOrCreate with identity keys ensures idempotent syncs
 -   **Impact**: Eliminated duplicate detail rows, ensured consistency between SAP exports and application data, improved data integrity
 -   **Technical Details**: Added identity columns to po_temps, pr_temps, purchase_order_details, purchase_request_details; updated SQL queries to include SAP line identifiers; implemented upsert logic with identity-based unique keys; added unique constraints at database level
+
+### PR Detail Identity Reconciliation Fix (2025-11-27) ✅ COMPLETE
+
+-   **Challenge**: SAP sync failed with `duplicate entry ... pr_detail_line_identity_unique` when DocEntry/LineNum changed (or were missing) between Excel imports and direct SAP sync
+-   **Solution**: Updated PR conversion logic to first reconcile by `line_identity` before inserting rows keyed by SAP identifiers, allowing existing fallback rows to be upgraded instead of duplicated
+-   **Key Learning**: When multiple identity strategies coexist, conversion must bridge between them to keep database constraints satisfied; reconciling hashes before SAP IDs keeps both Excel and SAP pipelines idempotent
+-   **Impact**: PR sync now completes even when SAP renumbers lines, eliminating fatal duplicate errors and ensuring detail rows stay unique across import paths

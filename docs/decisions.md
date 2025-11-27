@@ -190,3 +190,31 @@ Decision: SAP Line Identity Tracking for Duplicate Prevention - 2025-11-26
 - Created `upsertPurchaseOrderDetail()` and `upsertPurchaseRequestDetail()` methods that use SAP IDs when available, fallback to hash when not
 
 **Review Date**: 2026-02-26 (3 months)
+
+---
+
+Decision: PR Detail Identity Reconciliation During SAP Sync - 2025-11-27
+
+**Context**: After enabling SAP line identity tracking, some PR detail rows created via Excel import retained placeholder `sap_line_num` values (often `0`). When SAP sync reprocessed the same lines with correct line numbers, the converter attempted to insert new rows keyed by the SAP identifiers, causing `duplicate entry ... line_identity` errors and blocking the sync pipeline.
+
+**Options Considered**:
+
+1. **Option A**: Drop the `(purchase_request_id, line_identity)` unique constraint
+    - ✅ Pros: Eliminates the immediate database error
+    - ❌ Cons: Reintroduces duplicate rows when Excel imports overlap with SAP sync
+
+2. **Option B**: Teach the converter to reconcile records created via hash fallback before inserting with SAP identifiers
+    - ✅ Pros: Preserves both unique constraints, keeps Excel import compatibility, and auto-heals legacy rows with incorrect `sap_line_num`
+    - ❌ Cons: Requires additional queries during conversion
+
+**Decision**: Implemented Option B to ensure SAP-sourced rows first try to match existing records by `line_identity` before creating new entries keyed by SAP DocEntry/LineNum.
+
+**Implementation**:
+- Updated `SyncWithSapController::upsertPurchaseRequestDetail()` and `DailyPRController::upsertPurchaseRequestDetail()` to:
+  - Build a shared payload containing SAP identifiers and hash-based `line_identity`
+  - When SAP DocEntry/LineNum are present, update the record with the same `line_identity` if it exists (covering Excel-imported rows and SAP rows with shifting line numbers)
+  - Fall back to an `updateOrCreate` keyed by SAP identifiers only after the hash lookup fails
+  - Continue using the hash-only lookup when SAP identifiers are missing
+- Keeps database constraints unchanged and ensures idempotent sync behavior even when SAP renumbers lines.
+
+**Review Date**: 2026-02-27 (3 months)

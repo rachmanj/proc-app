@@ -547,18 +547,8 @@ class SyncWithSapController extends Controller
         $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
         $lineIdentity = $this->buildPrLineIdentity($purchaseRequestId, $detail);
 
-        $uniqueKeys = [
+        $payload = [
             'purchase_request_id' => $purchaseRequestId,
-        ];
-
-        if (!is_null($detail->sap_doc_entry) && !is_null($detail->sap_line_num)) {
-            $uniqueKeys['sap_doc_entry'] = $detail->sap_doc_entry;
-            $uniqueKeys['sap_line_num'] = $detail->sap_line_num;
-        } else {
-            $uniqueKeys['line_identity'] = $lineIdentity;
-        }
-
-        PurchaseRequestDetail::updateOrCreate($uniqueKeys, [
             'item_code' => $detail->item_code,
             'item_name' => $detail->item_name,
             'quantity' => $quantity,
@@ -570,7 +560,31 @@ class SyncWithSapController extends Controller
             'sap_line_num' => $detail->sap_line_num,
             'sap_vis_order' => $detail->sap_vis_order,
             'line_identity' => $lineIdentity,
-        ]);
+        ];
+
+        if (!is_null($detail->sap_doc_entry) && !is_null($detail->sap_line_num)) {
+            $existing = PurchaseRequestDetail::where('purchase_request_id', $purchaseRequestId)
+                ->where('line_identity', $lineIdentity)
+                ->first();
+
+            if ($existing) {
+                $existing->fill($payload)->save();
+                return;
+            }
+
+            PurchaseRequestDetail::updateOrCreate([
+                'purchase_request_id' => $purchaseRequestId,
+                'sap_doc_entry' => $detail->sap_doc_entry,
+                'sap_line_num' => $detail->sap_line_num,
+            ], $payload);
+
+            return;
+        }
+
+        PurchaseRequestDetail::updateOrCreate([
+            'purchase_request_id' => $purchaseRequestId,
+            'line_identity' => $lineIdentity,
+        ], $payload);
     }
 
     private function buildPrLineIdentity(int $purchaseRequestId, $detail): string

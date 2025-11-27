@@ -2,7 +2,7 @@ Keep your task management simple and focused on what you're actually working on:
 
 ```markdown
 **Purpose**: Track current work and immediate priorities
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-11-27
 
 ## Task Management Guidelines
 
@@ -56,6 +56,7 @@ Include relevant context in brackets to help with future AI-assisted coding:
 
 ## Recently Completed
 
+-   `[done] P1: Resolve duplicate PR detail inserts when SAP line numbers shift [app/Http/Controllers/Master/SyncWithSapController.php, app/Http/Controllers/Master/DailyPRController.php] (completed: 2025-11-27)`
 -   `[done] P1: Implement SAP line identity tracking for duplicate prevention [database/migrations, app/Services/SapService.php, app/Http/Controllers/Master/SyncWithSapController.php, app/Http/Controllers/Master/DailyPRController.php, app/Http/Controllers/Master/POTempController.php, app/Imports] (completed: 2025-11-26)`
 -   `[done] P2: Fix date input visibility issues in sync panels [resources/views/master/sync-with-sap/partials/pr-panel.blade.php, resources/views/master/sync-with-sap/partials/po-panel.blade.php] (completed: 2025-11-26)`
 -   `[done] P2: Replace CDN assets with local assets [resources/views/layout/partials/head.blade.php, resources/views/layout/partials/script.blade.php] (completed: 2025-11-26)`
