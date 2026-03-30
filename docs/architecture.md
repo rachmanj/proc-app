@@ -1,5 +1,5 @@
 Purpose: Technical reference for understanding system design and development patterns
-Last Updated: 2025-01-27
+Last Updated: 2025-11-26
 
 ## Architecture Documentation Guidelines
 
@@ -56,7 +56,7 @@ A comprehensive procurement management system built with Laravel 11, designed to
 
 -   **Framework**: Laravel 11
 -   **PHP Version**: 8.2+
--   **Database**: MySQL
+-   **Database**: MySQL (primary), SQL Server (SAP B1 connection via `sap_sql`)
 -   **Authentication**: Laravel's built-in authentication (username-based)
 -   **Authorization**: Spatie Laravel Permission (role and permission-based)
 -   **File Storage**: Laravel Storage (public disk)
@@ -173,6 +173,8 @@ resources/views/
 -   `upload_consignment`: Consignment upload access
 -   `crud_consignment`: Consignment CRUD operations
 -   `search_consignment`: Consignment search access
+-   `sync-custom-date`: Access to custom date range selection in SAP sync (v2.2)
+-   `impor-sap-data`: Access to PR Import and PO Import menu items (v2.2)
 
 ### 2. Purchase Request (PR) Management
 
@@ -334,17 +336,35 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 -   Project code management
 -   Daily PR import from Excel (via pr_temps table)
 -   PO Temp import from Excel (via po_temps table)
+-   **SAP B1 Direct SQL Server Sync** (v2.2)
+    -   Direct synchronization with SAP B1 SQL Server for PR and PO data
+    -   Consolidated sync interface for both PR and PO data types
+    -   Date range selection (TODAY, YESTERDAY, CUSTOM) with UTC+8 timezone support
+    -   Automatic conversion from temporary tables to main tables after sync
+    -   Detailed sync logging and history tracking
+    -   Permission-based access control (`sync-custom-date` for custom date ranges, `impor-sap-data` for import menu items)
+    -   **Identity tracking and duplicate prevention**: Uses SAP line identifiers (DocEntry, LineNum, VisOrder) to prevent duplicate detail rows during sync operations
 
 #### Models
 
 -   **Supplier**: Supplier information
 -   **Department**: Department information
 -   **Project**: Project data
+-   **SyncLog**: Tracks sync operations with status, record counts, and error messages
+
+#### Services
+
+-   **SapService**: Handles SAP B1 SQL Server queries and data mapping
+    -   `executePoSqlQuery($startDate, $endDate)`: Executes PO SQL query from `database/list_po.sql` (includes SAP line identifiers: DocEntry, LineNum, VisOrder)
+    -   `executePrSqlQuery($startDate, $endDate)`: Executes PR SQL query from `database/list_pr_generated.sql` (includes SAP line identifiers: DocEntry, LineNum, VisOrder)
+    -   `mapPoResultToModel($row)`: Maps SQL results to PoTemp model including SAP identity fields
+    -   `mapPrResultToModel($row)`: Maps SQL results to PrTemp model including SAP identity fields
 
 #### Controllers
 
 -   `App\Http\Controllers\Master\DailyPRController`
 -   `App\Http\Controllers\Master\POTempController`
+-   `App\Http\Controllers\Master\SyncWithSapController`: Consolidated sync controller for PR and PO data
 
 ### 8. User Management
 
@@ -399,8 +419,10 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 #### purchase_request_details
 
 -   PR line items
--   Fields: id, purchase_request_id, item_code, item_name, quantity, uom, open_qty, line_remarks, purchase_order_detail_id, status, timestamps
+-   Fields: id, purchase_request_id, sap_doc_entry, sap_line_num, sap_vis_order, line_identity, item_code, item_name, quantity, uom, open_qty, line_remarks, purchase_order_detail_id, status, timestamps
+-   Unique constraints: (purchase_request_id, sap_doc_entry, sap_line_num) and (purchase_request_id, line_identity)
 -   Relationships: belongsTo PurchaseRequest, belongsTo PurchaseOrderDetail
+-   Identity tracking: Uses SAP line identifiers (DocEntry, LineNum, VisOrder) to prevent duplicate detail rows during sync
 
 #### purchase_orders
 
@@ -412,18 +434,31 @@ PO Submitted → Level 1 Approval → Level 2 Approval → ... → Final Approva
 #### purchase_order_details
 
 -   PO line items
--   Fields: id, purchase_order_id, item_code, description, remark1, remark2, qty, uom, unit_price, timestamps
+-   Fields: id, purchase_order_id, sap_doc_entry, sap_line_num, sap_vis_order, line_identity, item_code, description, remark1, remark2, qty, uom, unit_price, item_amount, timestamps
+-   Unique constraints: (purchase_order_id, sap_doc_entry, sap_line_num) and (purchase_order_id, line_identity)
 -   Relationships: belongsTo PurchaseOrder
+-   Identity tracking: Uses SAP line identifiers (DocEntry, LineNum, VisOrder) to prevent duplicate detail rows during sync
 
 #### po_temps
 
 -   Temporary PO data for imports
--   Used for importing PO data from Excel before creating actual POs
+-   Fields: Includes sap_doc_entry, sap_line_num, sap_vis_order, line_identity for identity tracking
+-   Used for importing PO data from Excel or SAP B1 sync before creating actual POs
+-   Identity tracking: Stores SAP line identifiers to enable duplicate prevention during conversion
 
 #### pr_temps
 
 -   Temporary PR data for imports
--   Used for importing PR data from Excel before creating actual PRs
+-   Fields: Includes sap_doc_entry, sap_line_num, sap_vis_order, line_identity for identity tracking
+-   Used for importing PR data from Excel or SAP B1 sync before creating actual PRs
+-   Identity tracking: Stores SAP line identifiers to enable duplicate prevention during conversion
+
+#### sync_logs
+
+-   Tracks SAP B1 synchronization operations
+-   Fields: id, data_type (enum: PR, PO), start_date, end_date, records_synced, records_created, records_skipped, sync_status (enum: success, failed, partial), convert_status (enum: success, failed, skipped), error_message, user_id, timestamps
+-   Relationships: belongsTo User
+-   Used for audit trail and troubleshooting sync operations
 
 ### Approval System Tables
 
@@ -603,6 +638,33 @@ graph TD
     I -->|No| K[PO Approved]
 ```
 
+### SAP B1 Direct Sync Flow (v2.2)
+
+```mermaid
+graph TD
+    A[User Selects Date Range] --> B{TODAY/YESTERDAY/CUSTOM}
+    B --> C[SyncWithSapController]
+    C --> D[SapService.executeSqlQuery]
+    D --> E[SAP B1 SQL Server]
+    E --> F[Query Results with Line Identifiers]
+    F --> G[Map to Temp Model with Identity Fields]
+    G --> H[Truncate Temp Table]
+    H --> I[Insert to pr_temps/po_temps with SAP IDs]
+    I --> J[Create SyncLog Entry]
+    J --> K[Auto-Convert to Main Table]
+    K --> L[Upsert Details using Identity Keys]
+    L --> M{SAP IDs Available?}
+    M -->|Yes| N[Use sap_doc_entry + sap_line_num]
+    M -->|No| O[Use line_identity hash]
+    N --> P[updateOrCreate with Identity]
+    O --> P
+    P --> Q{Conversion Success?}
+    Q -->|Yes| R[Update SyncLog: Success]
+    Q -->|No| S[Update SyncLog: Failed]
+    R --> T[Display Results to User]
+    S --> T
+```
+
 ### Consignment Item Price Flow
 
 ```mermaid
@@ -661,7 +723,12 @@ graph TD
 2. **admin.php**: User and role management routes
 3. **procurement.php**: PR and PO management routes
 4. **approval.php**: Approval workflow routes
-5. **master.php**: Master data import routes
+5. **master.php**: Master data import routes and SAP B1 sync routes
+    -   `/master/sync-with-sap`: Consolidated SAP sync interface
+    -   `/master/sync-with-sap/sync-pr`: PR sync endpoint
+    -   `/master/sync-with-sap/sync-po`: PO sync endpoint
+    -   `/master/dailypr`: PR import from Excel
+    -   `/master/potemp`: PO import from Excel
 6. **consignment.php**: Consignment module routes
 7. **po_service.php**: PO Service routes
 8. **suppliers.php**: Supplier management routes
@@ -673,6 +740,15 @@ graph TD
 -   **Permission-based**: Routes protected by Spatie Permission middleware
 
 ## Artisan Commands
+
+### SAP Sync Commands
+
+1. **sap:dump-po**
+
+    - Dumps raw PO data from SAP SQL Server for debugging and analysis
+    - Options: `--start`, `--end`, `--po`, `--limit`, `--path`, `--no-file`
+    - Location: `app/Console/Commands/DumpSapPoDataCommand.php`
+    - Usage: `php artisan sap:dump-po --start=2025-11-24 --end=2025-11-24 --po=250207650 --limit=5`
 
 ### Data Migration Commands
 

@@ -11,6 +11,9 @@ class PRTempImport implements ToModel, WithHeadingRow
     public function model(array $row)
     {
         return new PrTemp([
+            'sap_doc_entry' => isset($row['sap_doc_entry']) ? (int)$row['sap_doc_entry'] : null,
+            'sap_line_num' => isset($row['sap_line_num']) ? (int)$row['sap_line_num'] : null,
+            'sap_vis_order' => isset($row['sap_vis_order']) ? (int)$row['sap_vis_order'] : null,
             'pr_draft_no' => $row['pr_draft_no'] ?? null,
             'pr_no' => $row['pr_no'] ?? null,
             'pr_date' => $this->convert_date($row['pr_date'] ?? null),

@@ -13,6 +13,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RealRashid\SweetAlert\Facades\Alert;
+use App\Services\SapService;
 
 class DailyPRController extends Controller
 {
@@ -49,6 +50,70 @@ class DailyPRController extends Controller
             return redirect()->back()->with('success', "Successfully imported {$rowCount} rows of data.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error importing data: ' . $e->getMessage());
+        }
+    }
+
+    public function syncFromSap(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            // Validate date range (max 90 days)
+            $start = new \DateTime($startDate);
+            $end = new \DateTime($endDate);
+            $diff = $start->diff($end);
+            
+            if ($diff->days > 90) {
+                return redirect()->back()->with('error', 'Date range cannot exceed 90 days');
+            }
+
+            Log::info('Starting PR sync from SAP', [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]);
+
+            $sapService = new SapService();
+            
+            // Execute SQL query
+            $results = $sapService->executePrSqlQuery($startDate, $endDate);
+
+            if (empty($results)) {
+                return redirect()->back()->with('info', 'No data found for the selected date range');
+            }
+
+            // Clear existing data
+            PrTemp::truncate();
+            Log::info('Cleared existing temporary PR data');
+
+            // Map and insert data
+            $insertData = [];
+            foreach ($results as $row) {
+                $insertData[] = $sapService->mapPrResultToModel($row);
+            }
+
+            // Bulk insert in chunks for better performance
+            $chunks = array_chunk($insertData, 500);
+            foreach ($chunks as $chunk) {
+                PrTemp::insert($chunk);
+            }
+
+            $rowCount = PrTemp::count();
+            Log::info('PR sync completed successfully', [
+                'row_count' => $rowCount,
+            ]);
+
+            return redirect()->back()->with('success', "Successfully synced {$rowCount} records from SAP");
+        } catch (\Exception $e) {
+            Log::error('PR Sync Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return redirect()->back()->with('error', 'Error syncing data from SAP: ' . $e->getMessage());
         }
     }
 
@@ -139,23 +204,15 @@ class DailyPRController extends Controller
                         'item_name',
                         'quantity',
                         'uom',
-                        'line_remarks'
+                        'line_remarks',
+                        'sap_doc_entry',
+                        'sap_line_num',
+                        'sap_vis_order',
                     ])
                     ->get();
 
                 foreach ($prDetails as $detail) {
-                    $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
-
-                    PurchaseRequestDetail::create([
-                        'purchase_request_id' => $purchaseRequest->id,
-                        'item_code' => $detail->item_code,
-                        'item_name' => $detail->item_name,
-                        'quantity' => $quantity,
-                        'uom' => $detail->uom,
-                        'open_qty' => $quantity,
-                        'line_remarks' => $detail->line_remarks ?? '',
-                        'status' => 'OPEN'
-                    ]);
+                    $this->upsertPurchaseRequestDetail($purchaseRequest->id, $detail);
                 }
 
                 $importedCount++;
@@ -196,5 +253,62 @@ class DailyPRController extends Controller
                 'reload_page' => true
             ], 500);
         }
+    }
+
+    private function upsertPurchaseRequestDetail(int $purchaseRequestId, $detail): void
+    {
+        $quantity = is_numeric($detail->quantity) ? (float)$detail->quantity : 0;
+        $lineIdentity = $this->buildPrLineIdentity($purchaseRequestId, $detail);
+
+        $payload = [
+            'purchase_request_id' => $purchaseRequestId,
+            'item_code' => $detail->item_code,
+            'item_name' => $detail->item_name,
+            'quantity' => $quantity,
+            'uom' => $detail->uom,
+            'open_qty' => $quantity,
+            'line_remarks' => $detail->line_remarks ?? '',
+            'status' => 'OPEN',
+            'sap_doc_entry' => $detail->sap_doc_entry,
+            'sap_line_num' => $detail->sap_line_num,
+            'sap_vis_order' => $detail->sap_vis_order,
+            'line_identity' => $lineIdentity,
+        ];
+
+        if (!is_null($detail->sap_doc_entry) && !is_null($detail->sap_line_num)) {
+            $existing = PurchaseRequestDetail::where('purchase_request_id', $purchaseRequestId)
+                ->where('line_identity', $lineIdentity)
+                ->first();
+
+            if ($existing) {
+                $existing->fill($payload)->save();
+                return;
+            }
+
+            PurchaseRequestDetail::updateOrCreate([
+                'purchase_request_id' => $purchaseRequestId,
+                'sap_doc_entry' => $detail->sap_doc_entry,
+                'sap_line_num' => $detail->sap_line_num,
+            ], $payload);
+
+            return;
+        }
+
+        PurchaseRequestDetail::updateOrCreate([
+            'purchase_request_id' => $purchaseRequestId,
+            'line_identity' => $lineIdentity,
+        ], $payload);
+    }
+
+    private function buildPrLineIdentity(int $purchaseRequestId, $detail): string
+    {
+        return hash('sha1', json_encode([
+            'pr' => $purchaseRequestId,
+            'item_code' => $detail->item_code,
+            'item_name' => $detail->item_name,
+            'quantity' => $detail->quantity,
+            'uom' => $detail->uom,
+            'line_remarks' => $detail->line_remarks ?? '',
+        ]));
     }
 }

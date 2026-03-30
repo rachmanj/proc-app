@@ -1,5 +1,5 @@
 **Purpose**: AI's persistent knowledge base for project context and learnings
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-26
 
 ## Memory Maintenance Guidelines
 
@@ -61,3 +61,26 @@
 -   **Solution**: Modified POController and show.blade.php to display attachment metadata without checking for local file existence
 -   **Key Learning**: For development environments, prioritize displaying metadata over perfect file simulation
 -   **Impact**: Improved development workflow by allowing attachment testing without needing production files locally
+
+### SAP B1 Direct SQL Server Sync Implementation (2025-11-17) ✅ COMPLETE
+
+-   **Challenge**: Manual Excel import workflow for PR and PO data from SAP B1 was time-consuming and error-prone
+-   **Solution**: Implemented direct SQL Server connection with consolidated sync interface, auto-conversion, and detailed logging
+-   **Key Learning**: Direct SQL access overcomes OData limitations; consolidated UI improves UX; auto-conversion eliminates manual steps
+-   **Impact**: Eliminated manual Excel import process, reduced errors, improved data freshness, provided audit trail via sync_logs table
+-   **Technical Details**: Created SapService for SQL queries, SyncWithSapController for consolidated interface, sync_logs table for tracking, permission-based access control
+
+### SAP Line Identity Tracking for Duplicate Prevention (2025-11-26) ✅ COMPLETE
+
+-   **Challenge**: Duplicate PR/PO detail rows created during SAP sync operations, causing data integrity issues and inconsistencies with SAP exports
+-   **Solution**: Implemented SAP line identity tracking using DocEntry, LineNum, and VisOrder from SAP, with hash-based fallback for Excel imports
+-   **Key Learning**: SAP's native line identifiers provide unique identification; unique database constraints enforce integrity; updateOrCreate with identity keys ensures idempotent syncs
+-   **Impact**: Eliminated duplicate detail rows, ensured consistency between SAP exports and application data, improved data integrity
+-   **Technical Details**: Added identity columns to po_temps, pr_temps, purchase_order_details, purchase_request_details; updated SQL queries to include SAP line identifiers; implemented upsert logic with identity-based unique keys; added unique constraints at database level
+
+### PR Detail Identity Reconciliation Fix (2025-11-27) ✅ COMPLETE
+
+-   **Challenge**: SAP sync failed with `duplicate entry ... pr_detail_line_identity_unique` when DocEntry/LineNum changed (or were missing) between Excel imports and direct SAP sync
+-   **Solution**: Updated PR conversion logic to first reconcile by `line_identity` before inserting rows keyed by SAP identifiers, allowing existing fallback rows to be upgraded instead of duplicated
+-   **Key Learning**: When multiple identity strategies coexist, conversion must bridge between them to keep database constraints satisfied; reconciling hashes before SAP IDs keeps both Excel and SAP pipelines idempotent
+-   **Impact**: PR sync now completes even when SAP renumbers lines, eliminating fatal duplicate errors and ensuring detail rows stay unique across import paths
