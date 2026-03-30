@@ -140,10 +140,10 @@
                                                                     class="text-primary">CONSIGNMENT</span>)</small>
                                                         @endif
                                                     </th>
-                                                    <th class="text-end" style="width: 100px">Qty</th>
+                                                    <th class="text-right" style="width: 100px">Qty</th>
                                                     <th style="width: 100px">UOM</th>
-                                                    <th class="text-end" style="width: 150px">Unit Price</th>
-                                                    <th class="text-end" style="width: 150px">Total</th>
+                                                    <th class="text-right" style="width: 150px">Unit Price</th>
+                                                    <th class="text-right" style="width: 150px">Total</th>
                                                     <th class="text-center" style="width: 100px;">Comments</th>
                                                 </tr>
                                             </thead>
@@ -165,11 +165,11 @@
                                                                 {{ $detail->description }}
                                                             @endif
                                                         </td>
-                                                        <td class="text-end">{{ number_format($detail->qty, 2) }}</td>
+                                                        <td class="text-right">{{ number_format($detail->qty, 2) }}</td>
                                                         <td>{{ $detail->uom }}</td>
-                                                        <td class="text-end">{{ number_format($detail->unit_price, 2) }}
+                                                        <td class="text-right">{{ number_format($detail->unit_price, 2) }}
                                                         </td>
-                                                        <td class="text-end">
+                                                        <td class="text-right">
                                                             {{ number_format($detail->qty * $detail->unit_price, 2) }}</td>
                                                         <td class="text-center">
                                                             <button
@@ -195,9 +195,9 @@
                                             @if ($purchaseOrder->purchaseOrderDetails->isNotEmpty())
                                                 <tfoot class="table-light">
                                                     <tr>
-                                                        <td colspan="6" class="text-end"><strong>Total Amount:</strong>
+                                                        <td colspan="6" class="text-right"><strong>Total Amount:</strong>
                                                         </td>
-                                                        <td class="text-end">
+                                                        <td class="text-right">
                                                             <strong>
                                                                 {{ number_format(
                                                                     $purchaseOrder->purchaseOrderDetails->sum(function ($detail) {

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'sap' => [
+        'sync_user_id' => env('SAP_SYNC_USER_ID'),
+    ],
+
 ];

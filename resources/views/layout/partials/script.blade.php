@@ -250,5 +250,3 @@
         });
     });
 </script>
-
-@stack('scripts')

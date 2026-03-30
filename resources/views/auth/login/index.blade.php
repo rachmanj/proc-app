@@ -19,7 +19,7 @@
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <h2><b>PROC</b> App<small> | v.2.2</small></h2>
+            <h2><b>PROC</b> App<small> | v.2.3</small></h2>
         </div>
         <!-- /.login-logo -->
         <div class="card">
@@ -80,11 +80,12 @@
 
         <!-- What's New Section -->
         <div class="card mt-3" id="whatsNewCard">
-            <div class="card-header p-2" style="cursor: pointer;" data-toggle="collapse" data-target="#whatsNewContent" aria-expanded="false" aria-controls="whatsNewContent" role="button">
+            <div class="card-header p-2" style="cursor: pointer;" data-toggle="collapse" data-target="#whatsNewContent"
+                aria-expanded="false" aria-controls="whatsNewContent" role="button">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-star text-warning"></i> 
+                    <i class="fas fa-star text-warning"></i>
                     <strong>What's New</strong>
-                    <small class="text-muted">- Recent Improvements (v2.2)</small>
+                    <small class="text-muted">- Recent Improvements (v2.3)</small>
                     <span class="float-right">
                         <i class="fas fa-chevron-down" id="whatsNewIcon"></i>
                     </span>
@@ -93,7 +94,7 @@
             <div id="whatsNewContent" class="collapse" aria-labelledby="whatsNewHeader">
                 <div class="card-body p-3">
                     <div class="row">
-                        <div class="col-md-6 mb-2">
+                        {{-- <div class="col-md-6 mb-2">
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-chart-line text-primary mr-2 mt-1"></i>
                                 <div>
@@ -101,8 +102,8 @@
                                     <small class="d-block text-muted">Real-time metrics, charts, and quick actions</small>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-2">
+                        </div> --}}
+                        {{-- <div class="col-md-6 mb-2">
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-file-excel text-success mr-2 mt-1"></i>
                                 <div>
@@ -110,8 +111,8 @@
                                     <small class="d-block text-muted">Comprehensive reports with export capabilities</small>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-2">
+                        </div> --}}
+                        {{-- <div class="col-md-6 mb-2">
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-tasks text-info mr-2 mt-1"></i>
                                 <div>
@@ -119,8 +120,8 @@
                                     <small class="d-block text-muted">Bulk approval, rejection, and export</small>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-2">
+                        </div> --}}
+                        {{-- <div class="col-md-6 mb-2">
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-search text-warning mr-2 mt-1"></i>
                                 <div>
@@ -137,6 +138,30 @@
                                     <small class="d-block text-muted">Real-time notifications and alerts</small>
                                 </div>
                             </div>
+                        </div> --}}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-star text-warning mr-2 mt-1"></i>
+                                <div>
+                                    <strong>PR &amp; PO follow &amp; watchlist</strong>
+                                    <small class="d-block text-muted">Follow purchase requests and orders from the
+                                        detail page (follower count, activity on follow/unfollow). Open <strong>My
+                                            Watchlist</strong> under Procurement to see followed PRs and POs sorted by
+                                        recent activity; the menu badge shows how many you follow</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-comments text-primary mr-2 mt-1"></i>
+                                <div>
+                                    <strong>PR &amp; PO comments</strong>
+                                    <small class="d-block text-muted">Threaded comments on the document and on each
+                                        line: replies, @mentions, attachments, pin and resolve, filters (all /
+                                        unresolved / pinned). PO comments live on a dedicated tab; counts appear in the
+                                        activity timeline</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-2">
                             <div class="d-flex align-items-start">
@@ -151,8 +176,32 @@
                             <div class="d-flex align-items-start">
                                 <i class="fas fa-sync-alt text-info mr-2 mt-1"></i>
                                 <div>
-                                    <strong>SAP B1 Direct Sync (v2.2)</strong>
-                                    <small class="d-block text-muted">Direct SQL Server sync for PR/PO data with auto-conversion, date range selection, and duplicate prevention</small>
+                                    <strong>SAP B1 Direct Sync</strong>
+                                    <small class="d-block text-muted">Master → Sync With SAP: PR/PO from SQL Server with
+                                        date range, auto-import, and duplicate-safe line identity</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-terminal text-secondary mr-2 mt-1"></i>
+                                <div>
+                                    <strong>SAP sync CLI (<code class="small">sap:sync</code>)</strong>
+                                    <small class="d-block text-muted">Run the same PR/PO sync from the server: <code
+                                            class="small">php artisan @@sap:sync</code> with
+                                        today, yesterday, last N days, or custom dates. Optional <code
+                                            class="small">SAP_SYNC_USER_ID</code> for audit on scheduled jobs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-history text-primary mr-2 mt-1"></i>
+                                <div>
+                                    <strong>Sync activity log</strong>
+                                    <small class="d-block text-muted">Sync With SAP shows the latest
+                                        <strong>10</strong> runs with time, query range, counts, and who triggered the
+                                        sync</small>
                                 </div>
                             </div>
                         </div>
@@ -161,7 +210,19 @@
                                 <i class="fas fa-shield-alt text-success mr-2 mt-1"></i>
                                 <div>
                                     <strong>Enhanced Data Integrity</strong>
-                                    <small class="d-block text-muted">SAP line identity tracking prevents duplicate PR/PO details during sync</small>
+                                    <small class="d-block text-muted">SAP line identity tracking prevents duplicate
+                                        PR/PO details during sync</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-paint-brush text-purple mr-2 mt-1"></i>
+                                <div>
+                                    <strong>UI refinements</strong>
+                                    <small class="d-block text-muted">Comment editor: single rich-text toolbar (no
+                                        duplicate bars). PO detail: Purchase Order Items — qty, unit price, and total
+                                        columns right-aligned</small>
                                 </div>
                             </div>
                         </div>
@@ -227,7 +288,7 @@
 
         #whatsNewCard {
             border: 1px solid #dee2e6;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         #whatsNewCard .card-header {
@@ -248,8 +309,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
         }
 
         .login-box {

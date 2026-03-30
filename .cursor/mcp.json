@@ -1,0 +1,18 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "type": "stdio",
+            "command": "php",
+            "args": [
+                "${workspaceFolder}/artisan",
+                "mcp:start",
+                "laravel-boost"
+            ],
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "APP_ENV": "local",
+                "APP_DEBUG": "true"
+            }
+        }
+    }
+}
