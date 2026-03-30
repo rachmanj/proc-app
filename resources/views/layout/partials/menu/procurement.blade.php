@@ -18,6 +18,18 @@
                 </a>
             </li>
         @endcan
-       
+        <li class="dropdown-divider"></li>
+        <li>
+            <a href="{{ route('procurement.collaboration.watchlist') }}" class="dropdown-item">
+                <i class="fas fa-star mr-2"></i> My Watchlist
+                @php
+                    $followCount = \App\Models\PrFollow::where('user_id', auth()->id())->count() + 
+                                   \App\Models\PoFollow::where('user_id', auth()->id())->count();
+                @endphp
+                @if($followCount > 0)
+                    <span class="badge bg-primary float-end">{{ $followCount }}</span>
+                @endif
+            </a>
+        </li>
     </ul>
 </li>

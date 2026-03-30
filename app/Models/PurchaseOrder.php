@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Log;
 use App\Models\Approver;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -280,5 +281,38 @@ class PurchaseOrder extends Model
     public function details()
     {
         return $this->hasMany(PurchaseOrderDetail::class);
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable')->whereNull('parent_id');
+    }
+
+    public function allComments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(PoAssignment::class);
+    }
+
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'po_assignments', 'purchase_order_id', 'assigned_to_user_id')
+            ->withPivot('notes', 'assigned_by_user_id', 'created_at')
+            ->withTimestamps();
+    }
+
+    public function follows()
+    {
+        return $this->hasMany(PoFollow::class);
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'po_follows', 'purchase_order_id', 'user_id')
+            ->withTimestamps();
     }
 }

@@ -21,7 +21,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $isApprover = $user->approvers()->exists();
-        
+
         return view('dashboard.index', compact('isApprover'));
     }
 
@@ -105,8 +105,8 @@ class DashboardController extends Controller
                 pr_status,
                 COUNT(*) as count
             ')
-            ->groupBy('pr_status')
-            ->get();
+                ->groupBy('pr_status')
+                ->get();
 
             $labels = [];
             $values = [];
@@ -142,24 +142,24 @@ class DashboardController extends Controller
                 DATE(create_date) as date,
                 COUNT(*) as count
             ')
-            ->where('create_date', '>=', $startDate)
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->pluck('count', 'date')
-            ->toArray();
+                ->where('create_date', '>=', $startDate)
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->pluck('count', 'date')
+                ->toArray();
 
             $approved = PurchaseOrder::selectRaw('
                 DATE(updated_at) as date,
                 COUNT(*) as count
             ')
-            ->where('status', 'approved')
-            ->where('updated_at', '>=', $startDate)
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->pluck('count', 'date')
-            ->toArray();
+                ->where('status', 'approved')
+                ->where('updated_at', '>=', $startDate)
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->pluck('count', 'date')
+                ->toArray();
 
             $labels = [];
             $createdData = [];
@@ -201,12 +201,12 @@ class DashboardController extends Controller
                 approval_levels.name as level_name,
                 AVG(TIMESTAMPDIFF(HOUR, purchase_order_approvals.created_at, purchase_order_approvals.approved_at)) as avg_hours
             ')
-            ->join('approval_levels', 'purchase_order_approvals.approval_level_id', '=', 'approval_levels.id')
-            ->where('purchase_order_approvals.status', 'approved')
-            ->whereNotNull('purchase_order_approvals.approved_at')
-            ->groupBy('approval_levels.id', 'approval_levels.name')
-            ->orderBy('approval_levels.level')
-            ->get();
+                ->join('approval_levels', 'purchase_order_approvals.approval_level_id', '=', 'approval_levels.id')
+                ->where('purchase_order_approvals.status', 'approved')
+                ->whereNotNull('purchase_order_approvals.approved_at')
+                ->groupBy('approval_levels.id', 'approval_levels.name')
+                ->orderBy('approval_levels.level')
+                ->get();
 
             $labels = [];
             $values = [];
@@ -269,9 +269,9 @@ class DashboardController extends Controller
                 pr_status,
                 COUNT(*) as count
             ')
-            ->whereNotNull('dept_name')
-            ->groupBy('dept_name', 'pr_status')
-            ->get();
+                ->whereNotNull('dept_name')
+                ->groupBy('dept_name', 'pr_status')
+                ->get();
 
             $departments = $stats->pluck('dept_name')->unique()->values();
             $statuses = ['OPEN', 'progress', 'approved', 'CLOSED'];
@@ -313,63 +313,52 @@ class DashboardController extends Controller
         $user = auth()->user();
         $isApprover = $user->approvers()->exists();
 
-        $recentPRs = PurchaseRequest::with('details')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($pr) {
-                return [
-                    'id' => $pr->id,
-                    'pr_no' => $pr->pr_no ?? $pr->pr_draft_no,
-                    'status' => $pr->pr_status,
-                    'requestor' => $pr->requestor,
-                    'department' => $pr->dept_name,
-                    'created_at' => $pr->created_at->format('Y-m-d H:i'),
-                    'url' => route('procurement.pr.show', $pr),
-                ];
-            });
+        // Cache for 2 minutes (120 seconds)
+        $cacheKey = "dashboard.activity." . ($isApprover ? "approver.{$user->id}" : "user");
 
-        $recentPOs = PurchaseOrder::with(['supplier', 'purchaseOrderDetails'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($po) {
-                // Calculate PO value from purchase_order_details (sum of item_amount)
-                $totalValue = $po->purchaseOrderDetails->sum('item_amount') ?? 0;
-                return [
-                    'id' => $po->id,
-                    'doc_num' => $po->doc_num,
-                    'status' => $po->status,
-                    'supplier' => $po->supplier->name ?? 'N/A',
-                    'total_value' => number_format($totalValue, 0, ',', '.'),
-                    'created_at' => $po->created_at->format('Y-m-d H:i'),
-                    'url' => route('procurement.po.show', $po),
-                ];
-            });
-
-        $recentApprovals = PurchaseOrderApproval::with(['purchaseOrder.supplier', 'approval_level'])
-            ->where('status', 'approved')
-            ->orderBy('approved_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($approval) {
-                return [
-                    'id' => $approval->id,
-                    'po_id' => $approval->purchase_order_id,
-                    'po_number' => $approval->purchaseOrder->doc_num ?? 'N/A',
-                    'level' => $approval->approval_level->name ?? 'N/A',
-                    'approved_at' => $approval->approved_at ? Carbon::parse($approval->approved_at)->format('Y-m-d H:i') : 'N/A',
-                    'url' => route('procurement.po.show', $approval->purchaseOrder),
-                ];
-            });
-
-        $pendingApprovalsForUser = [];
-        if ($isApprover) {
-            $userApprovalLevelIds = $user->approvers()->pluck('approval_level_id');
-            $pendingApprovalsForUser = PurchaseOrderApproval::with(['purchaseOrder.supplier', 'approval_level'])
-                ->where('status', 'pending')
-                ->whereIn('approval_level_id', $userApprovalLevelIds)
+        $data = Cache::remember($cacheKey, 120, function () use ($user, $isApprover) {
+            $recentPRs = PurchaseRequest::with('details')
                 ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($pr) {
+                    return [
+                        'id' => $pr->id,
+                        'pr_no' => $pr->pr_no ?? $pr->pr_draft_no,
+                        'status' => $pr->pr_status,
+                        'requestor' => $pr->requestor,
+                        'department' => $pr->dept_name,
+                        'created_at' => $pr->created_at->format('Y-m-d H:i'),
+                        'url' => route('procurement.pr.show', $pr),
+                    ];
+                });
+
+            $recentPOs = PurchaseOrder::with(['supplier:id,name', 'purchaseOrderDetails:id,purchase_order_id,item_amount'])
+                ->select('id', 'doc_num', 'status', 'supplier_id', 'created_at')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($po) {
+                    // Calculate PO value from purchase_order_details (sum of item_amount)
+                    $totalValue = $po->purchaseOrderDetails->sum('item_amount') ?? 0;
+                    return [
+                        'id' => $po->id,
+                        'doc_num' => $po->doc_num,
+                        'status' => $po->status,
+                        'supplier' => $po->supplier->name ?? 'N/A',
+                        'total_value' => number_format($totalValue, 0, ',', '.'),
+                        'created_at' => $po->created_at->format('Y-m-d H:i'),
+                        'url' => route('procurement.po.show', $po),
+                    ];
+                });
+
+            $recentApprovals = PurchaseOrderApproval::with([
+                'purchaseOrder:id,doc_num',
+                'approval_level:id,name'
+            ])
+                ->select('id', 'purchase_order_id', 'approval_level_id', 'status', 'approved_at')
+                ->where('status', 'approved')
+                ->orderBy('approved_at', 'desc')
                 ->limit(10)
                 ->get()
                 ->map(function ($approval) {
@@ -377,20 +366,48 @@ class DashboardController extends Controller
                         'id' => $approval->id,
                         'po_id' => $approval->purchase_order_id,
                         'po_number' => $approval->purchaseOrder->doc_num ?? 'N/A',
-                        'supplier' => $approval->purchaseOrder->supplier->name ?? 'N/A',
                         'level' => $approval->approval_level->name ?? 'N/A',
-                        'created_at' => $approval->created_at->format('Y-m-d H:i'),
-                        'url' => route('approvals.po.show', $approval->purchaseOrder),
+                        'approved_at' => $approval->approved_at ? Carbon::parse($approval->approved_at)->format('Y-m-d H:i') : 'N/A',
+                        'url' => $approval->purchaseOrder ? route('procurement.po.show', $approval->purchaseOrder) : '#',
                     ];
                 });
-        }
 
-        return response()->json([
-            'recent_prs' => $recentPRs,
-            'recent_pos' => $recentPOs,
-            'recent_approvals' => $recentApprovals,
-            'pending_approvals' => $pendingApprovalsForUser,
-        ]);
+            $pendingApprovalsForUser = [];
+            if ($isApprover) {
+                $userApprovalLevelIds = $user->approvers()->pluck('approval_level_id');
+                $pendingApprovalsForUser = PurchaseOrderApproval::with([
+                    'purchaseOrder:id,doc_num,supplier_id',
+                    'purchaseOrder.supplier:id,name',
+                    'approval_level:id,name'
+                ])
+                    ->select('id', 'purchase_order_id', 'approval_level_id', 'status', 'created_at')
+                    ->where('status', 'pending')
+                    ->whereIn('approval_level_id', $userApprovalLevelIds)
+                    ->orderBy('created_at', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($approval) {
+                        return [
+                            'id' => $approval->id,
+                            'po_id' => $approval->purchase_order_id,
+                            'po_number' => $approval->purchaseOrder->doc_num ?? 'N/A',
+                            'supplier' => $approval->purchaseOrder->supplier->name ?? 'N/A',
+                            'level' => $approval->approval_level->name ?? 'N/A',
+                            'created_at' => $approval->created_at->format('Y-m-d H:i'),
+                            'url' => $approval->purchaseOrder ? route('approvals.po.show', $approval->purchaseOrder) : '#',
+                        ];
+                    });
+            }
+
+            return [
+                'recent_prs' => $recentPRs,
+                'recent_pos' => $recentPOs,
+                'recent_approvals' => $recentApprovals,
+                'pending_approvals' => $pendingApprovalsForUser,
+            ];
+        });
+
+        return response()->json($data);
     }
 
     private function calculateAverageApprovalTime()
@@ -398,9 +415,9 @@ class DashboardController extends Controller
         $avgTime = PurchaseOrderApproval::selectRaw('
             AVG(TIMESTAMPDIFF(HOUR, created_at, approved_at)) as avg_hours
         ')
-        ->where('status', 'approved')
-        ->whereNotNull('approved_at')
-        ->value('avg_hours');
+            ->where('status', 'approved')
+            ->whereNotNull('approved_at')
+            ->value('avg_hours');
 
         return $avgTime ? (float) $avgTime : 0;
     }

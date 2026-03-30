@@ -159,6 +159,9 @@ class POController extends Controller
     {
         try {
             $attachment = PoAttachment::findOrFail($attachmentId);
+            
+            // Get the purchase order before detaching
+            $purchaseOrder = $attachment->purchaseOrders()->first();
 
             // Delete the physical file
             if (Storage::disk('public')->exists($attachment->file_path)) {
@@ -167,6 +170,12 @@ class POController extends Controller
 
             // Detach from all purchase orders and delete the attachment record
             $attachment->purchaseOrders()->detach();
+            
+            // Log activity before deleting
+            if ($purchaseOrder) {
+                \App\Services\ActivityService::logFileDeleted($purchaseOrder, $attachment);
+            }
+            
             $attachment->delete();
 
             return response()->json([
@@ -400,6 +409,9 @@ class POController extends Controller
                     // Attach to purchase order via pivot table
                     $purchaseOrder->attachments()->attach($attachment->id);
                     
+                    // Log activity
+                    \App\Services\ActivityService::logFileUpload($purchaseOrder, $attachment);
+                    
                     $attachments[] = $attachment;
                 }
             }
@@ -501,8 +513,12 @@ class POController extends Controller
 
     public function show(PurchaseOrder $purchaseOrder)
     {
-        // Load the purchase order details relationship
-        $purchaseOrder->load('details');
+        // Load relationships with eager loading for performance
+        $purchaseOrder->load([
+            'details',
+            'assignedUsers',
+            'followers'
+        ]);
         
         // Get PR attachments based on pr_no with validation
         $prAttachments = collect();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PurchaseOrder;
 use App\Models\ApprovalLevel;
+use App\Services\ActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -53,6 +54,9 @@ class PurchaseOrderApprovalController extends Controller
             ]);
             Log::info('Approval record created');
 
+            // Log activity
+            ActivityService::logStatusChange($purchaseOrder, 'draft', 'submitted');
+
             $approvers = Approver::where('approval_level_id', $firstLevel->id)
                 ->with('user')
                 ->get();
@@ -100,6 +104,21 @@ class PurchaseOrderApprovalController extends Controller
 
             $purchaseOrder->refresh();
             $approver = Auth::user();
+
+            // Log activity
+            $purchaseOrder->refresh();
+            $recentApproval = $purchaseOrder->approvals()
+                ->where('status', 'approved')
+                ->latest()
+                ->first();
+            
+            $level = $recentApproval && $recentApproval->approval_level 
+                ? $recentApproval->approval_level->level 
+                : ($currentApproval && $currentApproval->approval_level 
+                    ? $currentApproval->approval_level->level 
+                    : null);
+            
+            ActivityService::logApproval($purchaseOrder, 'approved', $request->notes, $level);
 
             if ($purchaseOrder->status === 'approved') {
                 $creator = \App\Models\User::where('name', $purchaseOrder->submitted_by)->first();
@@ -178,6 +197,18 @@ class PurchaseOrderApprovalController extends Controller
             $purchaseOrder->reject(Auth::id(), $request->notes);
             $purchaseOrder->refresh();
 
+            // Log activity
+            $currentApproval = $purchaseOrder->approvals()
+                ->where('status', 'rejected')
+                ->latest()
+                ->first();
+            
+            $level = $currentApproval && $currentApproval->approval_level 
+                ? $currentApproval->approval_level->level 
+                : null;
+            
+            ActivityService::logApproval($purchaseOrder, 'rejected', $request->notes, $level);
+
             $approver = Auth::user();
             $creator = \App\Models\User::where('name', $purchaseOrder->submitted_by)->first();
             if ($creator) {
@@ -241,6 +272,18 @@ class PurchaseOrderApprovalController extends Controller
             // Use the model's revise method which handles all the logic
             $purchaseOrder->revise(Auth::id(), $request->notes);
             $purchaseOrder->refresh();
+
+            // Log activity
+            $currentApproval = $purchaseOrder->approvals()
+                ->where('status', 'revision')
+                ->latest()
+                ->first();
+            
+            $level = $currentApproval && $currentApproval->approval_level 
+                ? $currentApproval->approval_level->level 
+                : null;
+            
+            ActivityService::logApproval($purchaseOrder, 'revision', $request->notes, $level);
 
             $approver = Auth::user();
             $creator = \App\Models\User::where('name', $purchaseOrder->submitted_by)->first();

@@ -92,6 +92,7 @@
                                         <th>Open Qty</th>
                                         <th>Status</th>
                                         <th>Remarks</th>
+                                        <th class="text-center" style="width: 100px;">Comments</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -105,10 +106,22 @@
                                             <td class="text-right">{{ number_format($detail->open_qty) }}</td>
                                             <td>{{ $detail->status }}</td>
                                             <td>{{ $detail->line_remarks }}</td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm btn-outline-info line-item-comment-btn"
+                                                    data-line-item-id="{{ $detail->id }}"
+                                                    data-item-info="{{ $detail->item_code }} - {{ $detail->item_name }}"
+                                                    data-toggle="modal" data-target="#lineItemCommentsModal"
+                                                    title="View/Add Comments">
+                                                    <i class="fas fa-comments"></i>
+                                                    <span class="badge badge-info comment-count-badge"
+                                                        data-line-item-id="{{ $detail->id }}"
+                                                        style="display: none;">0</span>
+                                                </button>
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center">No details found</td>
+                                            <td colspan="9" class="text-center">No details found</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -117,6 +130,64 @@
                     </div>
                 </div>
             </div>
+
+            @include('procurement.collaboration._collaboration-actions', [
+                'type' => 'pr',
+                'id' => $purchaseRequest->id,
+            ])
+
+            @include('procurement.comments._comments-section', [
+                'type' => 'pr',
+                'id' => $purchaseRequest->id,
+            ])
+
+            @include('procurement.activity._activity-timeline', [
+                'type' => 'pr',
+                'id' => $purchaseRequest->id,
+            ])
         </div>
     </div>
+
+    @include('procurement.comments._line-item-comments-modal', [
+        'type' => 'pr',
+        'id' => $purchaseRequest->id,
+    ])
 @endsection
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+            const type = 'pr';
+            const id = {{ $purchaseRequest->id }};
+
+            // Load comment counts for line items
+            window.loadCommentCounts = function() {
+                $.ajax({
+                    url: `{{ route('procurement.comments.counts', ['type' => ':type', 'id' => ':id']) }}`
+                        .replace(':type', type)
+                        .replace(':id', id),
+                    method: 'GET',
+                    success: function(data) {
+                        // Update header count
+                        $('#comment-count').text(data.header || 0);
+
+                        // Update line item counts
+                        $.each(data.line_items, function(lineItemId, count) {
+                            const badge = $(
+                                `.comment-count-badge[data-line-item-id="${lineItemId}"]`
+                                );
+                            if (count > 0) {
+                                badge.text(count).show();
+                            } else {
+                                badge.hide();
+                            }
+                        });
+                    }
+                });
+            };
+
+            // Load counts on page load only (removed automatic polling)
+            window.loadCommentCounts();
+        });
+    </script>
+@endpush

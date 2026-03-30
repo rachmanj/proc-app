@@ -50,6 +50,16 @@
                                 <i class="fas fa-check-circle me-2"></i>Approval History
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-4" id="comments-tab" data-toggle="tab" href="#comments" role="tab">
+                                <i class="fas fa-comments me-2"></i>Comments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-4" id="activity-tab" data-toggle="tab" href="#activity" role="tab">
+                                <i class="fas fa-history me-2"></i>Activity Timeline
+                            </a>
+                        </li>
                     </ul>
 
                     {{-- Tabs Content --}}
@@ -64,6 +74,11 @@
                                         {{ ucfirst($purchaseOrder->status) }}
                                     </span>
                                 </div>
+
+                                @include('procurement.collaboration._collaboration-actions', [
+                                    'type' => 'po',
+                                    'id' => $purchaseOrder->id,
+                                ])
 
                                 {{-- PO Information --}}
                                 <div class="row g-4">
@@ -115,12 +130,21 @@
                                             <thead class="table-light">
                                                 <tr>
                                                     <th class="text-center" style="width: 60px">No.</th>
-                                                    <th>Item Code @if($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))<small class="text-muted">(<span class="text-primary">CONSIGNMENT</span>)</small>@endif</th>
-                                                    <th>Description @if($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))<small class="text-muted">(<span class="text-primary">CONSIGNMENT</span>)</small>@endif</th>
+                                                    <th>Item Code @if ($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))
+                                                            <small class="text-muted">(<span
+                                                                    class="text-primary">CONSIGNMENT</span>)</small>
+                                                        @endif
+                                                    </th>
+                                                    <th>Description @if ($purchaseOrder->details && $purchaseOrder->details->contains('item_code', 'CONSIGNMENT'))
+                                                            <small class="text-muted">(<span
+                                                                    class="text-primary">CONSIGNMENT</span>)</small>
+                                                        @endif
+                                                    </th>
                                                     <th class="text-end" style="width: 100px">Qty</th>
                                                     <th style="width: 100px">UOM</th>
                                                     <th class="text-end" style="width: 150px">Unit Price</th>
                                                     <th class="text-end" style="width: 150px">Total</th>
+                                                    <th class="text-center" style="width: 100px;">Comments</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -128,14 +152,14 @@
                                                     <tr>
                                                         <td class="text-center">{{ $index + 1 }}</td>
                                                         <td>
-                                                            @if($detail->item_code === 'CONSIGNMENT')
+                                                            @if ($detail->item_code === 'CONSIGNMENT')
                                                                 {{ $detail->remark1 ?? $detail->item_code }}
                                                             @else
                                                                 {{ $detail->item_code }}
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            @if($detail->item_code === 'CONSIGNMENT')
+                                                            @if ($detail->item_code === 'CONSIGNMENT')
                                                                 {{ $detail->remark2 ?? $detail->description }}
                                                             @else
                                                                 {{ $detail->description }}
@@ -147,10 +171,23 @@
                                                         </td>
                                                         <td class="text-end">
                                                             {{ number_format($detail->qty * $detail->unit_price, 2) }}</td>
+                                                        <td class="text-center">
+                                                            <button
+                                                                class="btn btn-sm btn-outline-info line-item-comment-btn"
+                                                                data-line-item-id="{{ $detail->id }}"
+                                                                data-item-info="{{ $detail->item_code }} - {{ $detail->description }}"
+                                                                data-toggle="modal" data-target="#lineItemCommentsModal"
+                                                                title="View/Add Comments">
+                                                                <i class="fas fa-comments"></i>
+                                                                <span class="badge badge-info comment-count-badge"
+                                                                    data-line-item-id="{{ $detail->id }}"
+                                                                    style="display: none;">0</span>
+                                                            </button>
+                                                        </td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="text-center text-muted py-3">No items
+                                                        <td colspan="8" class="text-center text-muted py-3">No items
                                                             found</td>
                                                     </tr>
                                                 @endforelse
@@ -168,8 +205,8 @@
                                                                     }),
                                                                     2,
                                                                 ) }}
-                                                            </strong>
                                                         </td>
+                                                        <td></td>
                                                     </tr>
                                                 </tfoot>
                                             @endif
@@ -205,7 +242,10 @@
                                                         <td class="text-center">
                                                             @php
                                                                 $extension = strtolower(
-                                                                    pathinfo($attachment->file_path, PATHINFO_EXTENSION),
+                                                                    pathinfo(
+                                                                        $attachment->file_path,
+                                                                        PATHINFO_EXTENSION,
+                                                                    ),
                                                                 );
                                                                 $isImage = in_array($extension, [
                                                                     'jpg',
@@ -228,21 +268,23 @@
                                                             @endif
                                                         </td>
                                                         <td>
-                                                            <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                                            <span class="text-truncate d-inline-block"
+                                                                style="max-width: 300px;"
                                                                 title="{{ $attachment->original_name }}">
                                                                 {{ $attachment->original_name }}
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            @if($attachment->description)
-                                                                <span class="text-muted">{{ $attachment->description }}</span>
+                                                            @if ($attachment->description)
+                                                                <span
+                                                                    class="text-muted">{{ $attachment->description }}</span>
                                                             @else
                                                                 <span class="text-muted">-</span>
                                                             @endif
                                                         </td>
                                                         <td class="text-center">
                                                             <a href="{{ route('procurement.po.view-attachment', ['attachmentId' => $attachment->id]) }}"
-                                                                class="btn btn-info btn-sm view-attachment-btn" 
+                                                                class="btn btn-info btn-sm view-attachment-btn"
                                                                 target="_blank"
                                                                 data-file-type="{{ $attachment->file_type }}"
                                                                 title="View File">
@@ -266,80 +308,86 @@
                                 </div>
 
                                 {{-- PR Attachments Section --}}
-                                @if($purchaseOrder->pr_no && $prAttachments->count() > 0)
-                                <div class="mb-4">
-                                    <h6 class="text-success mb-3">
-                                        <i class="fas fa-file-alt me-2"></i>Purchase Request Attachments (PR: {{ $purchaseOrder->pr_no }})
-                                    </h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-hover table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-center" style="width: 50px">No</th>
-                                                    <th class="text-center" style="width: 100px">Preview</th>
-                                                    <th style="width: 300px">File Name</th>
-                                                    <th style="width: 200px">Remarks</th>
-                                                    <th class="text-center" style="width: 100px">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($prAttachments as $index => $attachment)
+                                @if ($purchaseOrder->pr_no && $prAttachments->count() > 0)
+                                    <div class="mb-4">
+                                        <h6 class="text-success mb-3">
+                                            <i class="fas fa-file-alt me-2"></i>Purchase Request Attachments (PR:
+                                            {{ $purchaseOrder->pr_no }})
+                                        </h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-sm">
+                                                <thead>
                                                     <tr>
-                                                        <td class="text-center">{{ $index + 1 }}</td>
-                                                        <td class="text-center">
-                                                            @php
-                                                                $extension = strtolower(
-                                                                    pathinfo($attachment->file_path, PATHINFO_EXTENSION),
-                                                                );
-                                                                $isImage = in_array($extension, [
-                                                                    'jpg',
-                                                                    'jpeg',
-                                                                    'png',
-                                                                    'gif',
-                                                                ]);
-                                                            @endphp
-
-                                                            @if ($isImage)
-                                                                <img src="{{ asset('storage/' . $attachment->file_path) }}"
-                                                                    class="img-fluid" style="max-height: 50px;"
-                                                                    alt="PR Attachment preview">
-                                                            @elseif (in_array(strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)), ['xlsx', 'xls']))
-                                                                <i class="fas fa-file-excel fa-2x text-success"></i>
-                                                            @elseif (strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)) === 'pdf')
-                                                                <i class="fas fa-file-pdf fa-2x text-danger"></i>
-                                                            @else
-                                                                <i class="fas fa-file fa-2x text-secondary"></i>
-                                                            @endif
-                                                        </td>
-                                                        <td>
-                                                            <span class="text-truncate d-inline-block" style="max-width: 300px;" 
-                                                                title="{{ $attachment->original_name }}">
-                                                                {{ $attachment->original_name }}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            @if($attachment->description)
-                                                                <span class="text-muted">{{ $attachment->description }}</span>
-                                                            @elseif($attachment->keterangan)
-                                                                <span class="text-muted">{{ $attachment->keterangan }}</span>
-                                                            @else
-                                                                <span class="text-muted">-</span>
-                                                            @endif
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <a href="{{ route('procurement.pr.view-attachment', ['attachment' => $attachment->id]) }}"
-                                                                class="btn btn-success btn-sm" 
-                                                                target="_blank"
-                                                                title="View PR File">
-                                                                <i class="fas fa-eye"></i>
-                                                            </a>
-                                                        </td>
+                                                        <th class="text-center" style="width: 50px">No</th>
+                                                        <th class="text-center" style="width: 100px">Preview</th>
+                                                        <th style="width: 300px">File Name</th>
+                                                        <th style="width: 200px">Remarks</th>
+                                                        <th class="text-center" style="width: 100px">Actions</th>
                                                     </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($prAttachments as $index => $attachment)
+                                                        <tr>
+                                                            <td class="text-center">{{ $index + 1 }}</td>
+                                                            <td class="text-center">
+                                                                @php
+                                                                    $extension = strtolower(
+                                                                        pathinfo(
+                                                                            $attachment->file_path,
+                                                                            PATHINFO_EXTENSION,
+                                                                        ),
+                                                                    );
+                                                                    $isImage = in_array($extension, [
+                                                                        'jpg',
+                                                                        'jpeg',
+                                                                        'png',
+                                                                        'gif',
+                                                                    ]);
+                                                                @endphp
+
+                                                                @if ($isImage)
+                                                                    <img src="{{ asset('storage/' . $attachment->file_path) }}"
+                                                                        class="img-fluid" style="max-height: 50px;"
+                                                                        alt="PR Attachment preview">
+                                                                @elseif (in_array(strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)), ['xlsx', 'xls']))
+                                                                    <i class="fas fa-file-excel fa-2x text-success"></i>
+                                                                @elseif (strtolower(pathinfo($attachment->file_path, PATHINFO_EXTENSION)) === 'pdf')
+                                                                    <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                                                @else
+                                                                    <i class="fas fa-file fa-2x text-secondary"></i>
+                                                                @endif
+                                                            </td>
+                                                            <td>
+                                                                <span class="text-truncate d-inline-block"
+                                                                    style="max-width: 300px;"
+                                                                    title="{{ $attachment->original_name }}">
+                                                                    {{ $attachment->original_name }}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                @if ($attachment->description)
+                                                                    <span
+                                                                        class="text-muted">{{ $attachment->description }}</span>
+                                                                @elseif($attachment->keterangan)
+                                                                    <span
+                                                                        class="text-muted">{{ $attachment->keterangan }}</span>
+                                                                @else
+                                                                    <span class="text-muted">-</span>
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <a href="{{ route('procurement.pr.view-attachment', ['attachment' => $attachment->id]) }}"
+                                                                    class="btn btn-success btn-sm" target="_blank"
+                                                                    title="View PR File">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
                                 @endif
                             </div>
                         </div>
@@ -465,14 +513,40 @@
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Comments Tab --}}
+                        <div class="tab-pane fade" id="comments" role="tabpanel">
+                            <div class="p-4">
+                                @include('procurement.comments._comments-section', [
+                                    'type' => 'po',
+                                    'id' => $purchaseOrder->id,
+                                ])
+                            </div>
+                        </div>
+
+                        {{-- Activity Timeline Tab --}}
+                        <div class="tab-pane fade" id="activity" role="tabpanel">
+                            <div class="p-4">
+                                @include('procurement.activity._activity-timeline', [
+                                    'type' => 'po',
+                                    'id' => $purchaseOrder->id,
+                                ])
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    @include('procurement.comments._line-item-comments-modal', [
+        'type' => 'po',
+        'id' => $purchaseOrder->id,
+    ])
+
     <!-- Excel Preview Modal -->
-    <div class="modal fade" id="excelPreviewModal" tabindex="-1" role="dialog" aria-labelledby="excelPreviewModalLabel" aria-hidden="true">
+    <div class="modal fade" id="excelPreviewModal" tabindex="-1" role="dialog"
+        aria-labelledby="excelPreviewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -509,9 +583,8 @@
                                 <p class="mt-2">Loading Excel preview...</p>
                             </div>
                         </div>
-                        <iframe id="excelPreviewFrame" 
-                                style="width: 100%; height: 100%; border: none; display: none;"
-                                frameborder="0">
+                        <iframe id="excelPreviewFrame" style="width: 100%; height: 100%; border: none; display: none;"
+                            frameborder="0">
                         </iframe>
                     </div>
                 </div>
@@ -741,12 +814,12 @@
                 const fileType = $(this).data('file-type');
                 const fileName = $(this).closest('tr').find('td:nth-child(2) span').text();
                 const fileSize = $(this).closest('tr').find('td:nth-child(4)').text() || 'Unknown';
-                
+
                 // Check if it's an Excel file
-                const isExcelFile = fileType && fileType.includes('excel') || 
-                                   fileName.toLowerCase().includes('.xlsx') || 
-                                   fileName.toLowerCase().includes('.xls');
-                
+                const isExcelFile = fileType && fileType.includes('excel') ||
+                    fileName.toLowerCase().includes('.xlsx') ||
+                    fileName.toLowerCase().includes('.xls');
+
                 if (isExcelFile) {
                     // For Excel files, show preview modal
                     showExcelPreview(url, fileName, fileSize);
@@ -755,38 +828,39 @@
                     window.open(url, '_blank');
                 }
             });
-            
+
             // Function to show Excel preview using local server-side conversion
             function showExcelPreview(fileUrl, fileName, fileSize) {
                 // Update modal content
                 $('#excelFileName').text(fileName);
                 $('#excelFileInfo').text(`File size: ${fileSize}`);
-                
+
                 // Show loading
                 $('#excelPreviewLoading').show();
                 $('#excelPreviewFrame').hide();
-                
+
                 // Show modal
                 $('#excelPreviewModal').modal('show');
-                
+
                 // Debug: Log the URL
                 console.log('File URL:', fileUrl);
                 console.log('File Name:', fileName);
                 console.log('File Size:', fileSize);
-                
+
                 // Extract attachment ID from URL
                 const urlParts = fileUrl.split('/');
                 const attachmentId = urlParts[urlParts.length - 2]; // Get the ID before 'view'
                 console.log('Attachment ID:', attachmentId);
-                
+
                 // Create local Excel preview URL
-                const localPreviewUrl = `{{ route('procurement.po.preview-excel', ':attachmentId') }}`.replace(':attachmentId', attachmentId);
+                const localPreviewUrl = `{{ route('procurement.po.preview-excel', ':attachmentId') }}`.replace(
+                    ':attachmentId', attachmentId);
                 console.log('Local Preview URL:', localPreviewUrl);
-                
+
                 // Use local server-side Excel preview
                 const iframe = $('#excelPreviewFrame');
                 iframe.attr('src', localPreviewUrl);
-                
+
                 // Handle iframe load with timeout
                 let loadTimeout = setTimeout(function() {
                     console.log('Local Excel preview timeout...');
@@ -806,13 +880,13 @@
                         </div>
                     `);
                 }, 30000); // 30 second timeout for local preview
-                
+
                 iframe.on('load', function() {
                     clearTimeout(loadTimeout);
                     $('#excelPreviewLoading').hide();
                     $('#excelPreviewFrame').show();
                 });
-                
+
                 // Handle iframe error
                 iframe.on('error', function() {
                     clearTimeout(loadTimeout);
@@ -833,18 +907,18 @@
                         </div>
                     `);
                 });
-                
+
                 // Set up download button
                 $('#downloadExcelBtn').off('click').on('click', function() {
                     downloadExcelFile(fileUrl, fileName);
                 });
-                
+
                 // Set up open in new tab button
                 $('#openInNewTabBtn').off('click').on('click', function() {
                     window.open(fileUrl, '_blank');
                 });
             }
-            
+
             // Function to download Excel file
             function downloadExcelFile(fileUrl, fileName) {
                 const link = document.createElement('a');
@@ -855,5 +929,35 @@
                 document.body.removeChild(link);
             }
         });
+
+        // Load comment counts for line items
+        const type = 'po';
+        const id = {{ $purchaseOrder->id }};
+
+        window.loadCommentCounts = function() {
+            $.ajax({
+                url: `{{ route('procurement.comments.counts', ['type' => ':type', 'id' => ':id']) }}`
+                    .replace(':type', type)
+                    .replace(':id', id),
+                method: 'GET',
+                success: function(data) {
+                    // Update header count
+                    $('#comment-count').text(data.header || 0);
+
+                    // Update line item counts
+                    $.each(data.line_items, function(lineItemId, count) {
+                        const badge = $(`.comment-count-badge[data-line-item-id="${lineItemId}"]`);
+                        if (count > 0) {
+                            badge.text(count).show();
+                        } else {
+                            badge.hide();
+                        }
+                    });
+                }
+            });
+        };
+
+        // Load counts on page load only (removed automatic polling)
+        window.loadCommentCounts();
     </script>
 @endsection

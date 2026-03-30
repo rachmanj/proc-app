@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Carbon\Carbon;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
@@ -61,7 +62,7 @@ class PurchaseRequest extends Model
 
         $generatedDate = Carbon::parse($this->generated_date);
         $today = Carbon::today();
-        
+
         return $generatedDate->diffInDays($today);
     }
 
@@ -73,6 +74,39 @@ class PurchaseRequest extends Model
     public function attachments()
     {
         return $this->belongsToMany(PrAttachment::class, 'pr_attachment_purchase_request')
+            ->withTimestamps();
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable')->whereNull('parent_id');
+    }
+
+    public function allComments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(PrAssignment::class);
+    }
+
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'pr_assignments', 'purchase_request_id', 'assigned_to_user_id')
+            ->withPivot('notes', 'assigned_by_user_id', 'created_at')
+            ->withTimestamps();
+    }
+
+    public function follows()
+    {
+        return $this->hasMany(PrFollow::class);
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'pr_follows', 'purchase_request_id', 'user_id')
             ->withTimestamps();
     }
 }

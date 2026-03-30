@@ -174,8 +174,12 @@ class PRController extends Controller
 
     public function show(PurchaseRequest $purchaseRequest)
     {
-        // Load the purchase request details relationship
-        $purchaseRequest->load('details');
+        // Load relationships with eager loading for performance
+        $purchaseRequest->load([
+            'details',
+            'assignedUsers',
+            'followers'
+        ]);
 
         return view('procurement.pr.show', compact('purchaseRequest'));
     }
@@ -284,6 +288,9 @@ class PRController extends Controller
                     // Attach to purchase request via pivot table
                     $purchaseRequest->attachments()->attach($attachment->id);
                     
+                    // Log activity
+                    \App\Services\ActivityService::logFileUpload($purchaseRequest, $attachment);
+                    
                     $attachments[] = $attachment;
                 }
             }
@@ -355,6 +362,9 @@ class PRController extends Controller
 
             // Detach the attachment from the purchase request
             $purchaseRequest->attachments()->detach($attachment->id);
+
+            // Log activity before deleting
+            \App\Services\ActivityService::logFileDeleted($purchaseRequest, $attachment);
 
             // Delete the file from storage
             if (Storage::disk('public')->exists($attachment->file_path)) {

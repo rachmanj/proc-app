@@ -272,6 +272,47 @@
             </div>
         </div>
 
+        @if ($isApprover)
+            <!-- My Tasks Widget for Approvers -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-tasks"></i> My Tasks - Pending Approvals</h3>
+                            <div class="card-tools">
+                                <a href="{{ route('approvals.po.pending') }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-list"></i> View All
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="pending-approvals-table">
+                                    <thead>
+                                        <tr>
+                                            <th>PO Number</th>
+                                            <th>Supplier</th>
+                                            <th>Approval Level</th>
+                                            <th>Waiting Since</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="text-center">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <small class="text-muted">Showing up to 10 pending approvals. Click "View All" to see more.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Activity Feed -->
         <div class="row">
             <div class="col-lg-4">
@@ -313,47 +354,6 @@
                 </div>
             </div>
         </div>
-
-        @if ($isApprover)
-            <!-- My Tasks Widget for Approvers -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card card-warning">
-                        <div class="card-header">
-                            <h3 class="card-title"><i class="fas fa-tasks"></i> My Tasks - Pending Approvals</h3>
-                            <div class="card-tools">
-                                <a href="{{ route('approvals.po.pending') }}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-list"></i> View All
-                                </a>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover" id="pending-approvals-table">
-                                    <thead>
-                                        <tr>
-                                            <th>PO Number</th>
-                                            <th>Supplier</th>
-                                            <th>Approval Level</th>
-                                            <th>Waiting Since</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="5" class="text-center">Loading...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="card-footer text-center">
-                            <small class="text-muted">Showing up to 10 pending approvals. Click "View All" to see more.</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
     </div>
 @endsection
 

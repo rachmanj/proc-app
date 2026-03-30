@@ -28,16 +28,20 @@
                         <div class="col-md-12">
                             <label class="mb-2"><strong>Quick Filters:</strong></label>
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-sm btn-outline-primary quick-filter" data-filter="my-pos">
+                                <button type="button" class="btn btn-sm btn-outline-primary quick-filter"
+                                    data-filter="my-pos">
                                     <i class="fas fa-user"></i> My POs
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-warning quick-filter" data-filter="pending">
+                                <button type="button" class="btn btn-sm btn-outline-warning quick-filter"
+                                    data-filter="pending">
                                     <i class="fas fa-clock"></i> Pending Approval
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-success quick-filter" data-filter="approved">
+                                <button type="button" class="btn btn-sm btn-outline-success quick-filter"
+                                    data-filter="approved">
                                     <i class="fas fa-check"></i> Approved
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-info quick-filter" data-filter="this-month">
+                                <button type="button" class="btn btn-sm btn-outline-info quick-filter"
+                                    data-filter="this-month">
                                     <i class="fas fa-calendar"></i> This Month
                                 </button>
                             </div>
@@ -88,7 +92,8 @@
 
                             <div class="col-md-4 mb-3">
                                 <label for="status">Status <small>(Multiple selection)</small></label>
-                                <select class="form-control select2" id="status" name="status[]" multiple="multiple" data-placeholder="Select Status">
+                                <select class="form-control select2" id="status" name="status[]" multiple="multiple"
+                                    data-placeholder="Select Status">
                                     @foreach ($statuses as $status)
                                         <option value="{{ $status }}">{{ ucfirst($status) }}</option>
                                     @endforeach
@@ -97,7 +102,8 @@
 
                             <div class="col-md-4 mb-3">
                                 <label for="date_range">Date Range</label>
-                                <input type="text" class="form-control" id="date_range" name="date_range" placeholder="Select date range">
+                                <input type="text" class="form-control" id="date_range" name="date_range"
+                                    placeholder="Select date range">
                                 <input type="hidden" id="date_from" name="date_from">
                                 <input type="hidden" id="date_to" name="date_to">
                             </div>
@@ -159,7 +165,7 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
     <!-- Date Range Picker -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+    <link rel="stylesheet" href="{{ asset('adminlte/plugins/daterangepicker/daterangepicker.css') }}">
 @endsection
 
 @section('scripts')
@@ -180,8 +186,8 @@
     <!-- Select2 -->
     <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
     <!-- Date Range Picker -->
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="{{ asset('adminlte/plugins/moment/moment.min.js') }}"></script>
+    <script src="{{ asset('adminlte/plugins/daterangepicker/daterangepicker.js') }}"></script>
 
     <script>
         $(document).ready(function() {
@@ -204,12 +210,14 @@
                     'Last 7 Days': [moment().subtract(6, 'days'), moment()],
                     'Last 30 Days': [moment().subtract(29, 'days'), moment()],
                     'This Month': [moment().startOf('month'), moment().endOf('month')],
-                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,
+                        'month').endOf('month')]
                 }
             });
 
             $('#date_range').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' / ' + picker.endDate.format('YYYY-MM-DD'));
+                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' / ' + picker.endDate.format(
+                    'YYYY-MM-DD'));
                 $('#date_from').val(picker.startDate.format('YYYY-MM-DD'));
                 $('#date_to').val(picker.endDate.format('YYYY-MM-DD'));
             });
@@ -223,12 +231,12 @@
             // Quick Filters
             $('.quick-filter').on('click', function() {
                 const filter = $(this).data('filter');
-                
+
                 // Reset all filters first
                 $('#search-form')[0].reset();
                 $('.select2').val(null).trigger('change');
-                
-                switch(filter) {
+
+                switch (filter) {
                     case 'my-pos':
                         // Filter by current user - this would need backend support
                         break;
@@ -243,12 +251,13 @@
                         const endOfMonth = moment().endOf('month');
                         $('#date_range').data('daterangepicker').setStartDate(startOfMonth);
                         $('#date_range').data('daterangepicker').setEndDate(endOfMonth);
-                        $('#date_range').val(startOfMonth.format('YYYY-MM-DD') + ' / ' + endOfMonth.format('YYYY-MM-DD'));
+                        $('#date_range').val(startOfMonth.format('YYYY-MM-DD') + ' / ' + endOfMonth.format(
+                            'YYYY-MM-DD'));
                         $('#date_from').val(startOfMonth.format('YYYY-MM-DD'));
                         $('#date_to').val(endOfMonth.format('YYYY-MM-DD'));
                         break;
                 }
-                
+
                 // Trigger search
                 if (table) {
                     table.draw();
@@ -269,11 +278,11 @@
                         date_from: $('#date_from').val(),
                         date_to: $('#date_to').val()
                     };
-                    
+
                     const savedFilters = JSON.parse(localStorage.getItem('po_filter_presets') || '{}');
                     savedFilters[filterName] = filterData;
                     localStorage.setItem('po_filter_presets', JSON.stringify(savedFilters));
-                    
+
                     Swal.fire({
                         icon: 'success',
                         title: 'Filter Saved',
@@ -288,7 +297,7 @@
             $('#load-filter-btn').on('click', function() {
                 const savedFilters = JSON.parse(localStorage.getItem('po_filter_presets') || '{}');
                 const filterNames = Object.keys(savedFilters);
-                
+
                 if (filterNames.length === 0) {
                     Swal.fire({
                         icon: 'info',
@@ -297,14 +306,14 @@
                     });
                     return;
                 }
-                
+
                 // Create options HTML
                 let optionsHtml = '<select class="form-control" id="preset-select">';
                 filterNames.forEach(function(name) {
                     optionsHtml += '<option value="' + name + '">' + name + '</option>';
                 });
                 optionsHtml += '</select>';
-                
+
                 Swal.fire({
                     title: 'Load Filter Preset',
                     html: optionsHtml,
@@ -321,7 +330,7 @@
                 }).then(function(result) {
                     if (result.isConfirmed && result.value) {
                         const filterData = savedFilters[result.value];
-                        
+
                         // Apply filter data
                         $('#doc_num').val(filterData.doc_num || '');
                         $('#pr_num').val(filterData.pr_num || '');
@@ -329,15 +338,17 @@
                         $('#unit_no').val(filterData.unit_no || '').trigger('change');
                         $('#project_code').val(filterData.project_code || '').trigger('change');
                         $('#status').val(filterData.status || []).trigger('change');
-                        
+
                         if (filterData.date_from && filterData.date_to) {
-                            $('#date_range').data('daterangepicker').setStartDate(moment(filterData.date_from));
-                            $('#date_range').data('daterangepicker').setEndDate(moment(filterData.date_to));
+                            $('#date_range').data('daterangepicker').setStartDate(moment(filterData
+                                .date_from));
+                            $('#date_range').data('daterangepicker').setEndDate(moment(filterData
+                                .date_to));
                             $('#date_range').val(filterData.date_from + ' / ' + filterData.date_to);
                             $('#date_from').val(filterData.date_from);
                             $('#date_to').val(filterData.date_to);
                         }
-                        
+
                         // Trigger search
                         if (table) {
                             table.draw();
@@ -351,8 +362,7 @@
                 processing: true,
                 serverSide: true,
                 dom: 'Bfrtip',
-                buttons: [
-                    {
+                buttons: [{
                         extend: 'excelHtml5',
                         text: '<i class="fas fa-file-excel"></i> Excel',
                         className: 'btn btn-sm btn-success',
@@ -473,7 +483,7 @@
                 initComplete: function() {
                     // Append buttons container
                     table.buttons().container().appendTo('#po-table_wrapper .col-md-6:eq(0)');
-                    
+
                     // Load saved column visibility preferences
                     const savedCols = localStorage.getItem('po_table_cols');
                     if (savedCols) {
@@ -482,7 +492,7 @@
                             hiddenCols.forEach(function(colIndex) {
                                 table.column(colIndex).visible(false);
                             });
-                        } catch(e) {
+                        } catch (e) {
                             console.error('Error loading column preferences:', e);
                         }
                     }

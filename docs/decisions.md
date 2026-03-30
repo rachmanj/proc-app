@@ -30,6 +30,47 @@ Decision: [Title] - [YYYY-MM-DD]
 
 ## Recent Decisions
 
+Decision: Performance Optimization Strategy - 2025-01-27
+
+**Context**: Server log analysis revealed frequent polling (every 30 seconds) causing high API request volume (~200+ requests/hour per user) and slow queries (29 seconds to 1m 31s). Application needed optimization to reduce server load and improve response times.
+
+**Options Considered**:
+
+1. **Option A**: Increase polling intervals only
+
+    - ✅ Pros: Quick fix, minimal code changes
+    - ❌ Cons: Doesn't address slow queries, still unnecessary polling when tab inactive, poor user experience
+
+2. **Option B**: Comprehensive optimization with caching, smart polling, and database indexes
+
+    - ✅ Pros: Addresses root causes, significant performance gains (70-85% reduction), better UX with Page Visibility API
+    - ❌ Cons: More implementation effort, requires migration
+
+3. **Option C**: Server-Sent Events/WebSockets for real-time updates
+    - ✅ Pros: Best user experience, no polling needed
+    - ❌ Cons: Requires infrastructure changes, more complex, overkill for current needs
+
+**Decision**: Implemented Option B - Comprehensive optimization with multiple strategies
+
+**Rationale**:
+
+-   Page Visibility API provides smart polling without infrastructure changes
+-   Caching expensive queries provides immediate 50-90% performance gains
+-   Database indexes are essential for query performance and should be added regardless
+-   Achieves significant improvements with manageable implementation effort
+-   Can upgrade to SSE/WebSockets later if needed
+
+**Implementation**:
+
+-   Dashboard activity endpoint: 2-minute cache with optimized eager loading
+-   Notification polling: Page Visibility API (30s active, 5min inactive) + 30s backend cache
+-   Database indexes: 14 indexes added via migration (PR, PO, Approvals, Details, Notifications, Comments)
+-   Comment counts: Removed automatic polling, load on page load only
+
+**Review Date**: 2025-04-27 (3 months) - Evaluate if SSE/WebSockets needed, consider Redis for caching
+
+---
+
 Decision: Implement DataTables for Item Price Search - 2025-08-03
 
 **Context**: The consignment item price search page needed enhanced functionality for users to efficiently find, sort, and export item price data. The standard Laravel pagination was limiting user experience.

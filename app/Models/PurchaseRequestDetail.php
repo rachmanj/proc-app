@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PurchaseRequestDetail extends Model
 {
@@ -29,5 +30,10 @@ class PurchaseRequestDetail extends Model
     public function purchaseOrderDetail()
     {
         return $this->belongsTo(PurchaseOrderDetail::class);
+    }
+
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
     }
 }

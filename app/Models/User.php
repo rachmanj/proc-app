@@ -63,6 +63,18 @@ class User extends Authenticatable
         return $this->hasMany(Approver::class);
     }
 
+    public function followedPRs()
+    {
+        return $this->belongsToMany(PurchaseRequest::class, 'pr_follows', 'user_id', 'purchase_request_id')
+            ->withTimestamps();
+    }
+
+    public function followedPOs()
+    {
+        return $this->belongsToMany(PurchaseOrder::class, 'po_follows', 'user_id', 'purchase_order_id')
+            ->withTimestamps();
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

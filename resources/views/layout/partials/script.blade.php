@@ -6,8 +6,8 @@
 <script src="{{ asset('adminlte/plugins/datatables/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('adminlte/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <!-- Date Range Picker -->
-<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="{{ asset('adminlte/plugins/moment/moment.min.js') }}"></script>
+<script src="{{ asset('adminlte/plugins/daterangepicker/daterangepicker.js') }}"></script>
 <!-- Select2 -->
 <script src="{{ asset('adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
 <!-- AdminLTE App -->
@@ -15,21 +15,41 @@
 
 <script>
     $(document).ready(function() {
-        loadNotifications();
-        
-        setInterval(function() {
-            loadNotifications();
-        }, 30000);
+        let pollInterval = 30000; // 30 seconds when active
+        let inactiveInterval = 300000; // 5 minutes when inactive
+        let notificationTimer;
 
         function loadNotifications() {
+            // Don't poll when tab is hidden
+            if (document.hidden) return;
+
             $.ajax({
-                url: '{{ route("api.notifications.index") }}',
+                url: '{{ route('api.notifications.index') }}',
                 method: 'GET',
                 success: function(response) {
                     updateNotificationUI(response);
                 }
             });
         }
+
+        // Load immediately
+        loadNotifications();
+
+        // Adjust interval based on page visibility
+        document.addEventListener('visibilitychange', function() {
+            clearInterval(notificationTimer);
+            if (!document.hidden) {
+                // Tab became visible, load immediately and start polling
+                loadNotifications();
+                notificationTimer = setInterval(loadNotifications, pollInterval);
+            } else {
+                // Tab became hidden, use longer interval
+                notificationTimer = setInterval(loadNotifications, inactiveInterval);
+            }
+        });
+
+        // Start polling
+        notificationTimer = setInterval(loadNotifications, pollInterval);
 
         function updateNotificationUI(data) {
             const unreadCount = data.unread_count || 0;
@@ -74,7 +94,7 @@
 
         function markAsRead(notificationId) {
             $.ajax({
-                url: '{{ route("api.notifications.read", ":id") }}'.replace(':id', notificationId),
+                url: '{{ route('api.notifications.read', ':id') }}'.replace(':id', notificationId),
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -88,7 +108,7 @@
         $('#markAllReadBtn').on('click', function(e) {
             e.preventDefault();
             $.ajax({
-                url: '{{ route("api.notifications.mark-all-read") }}',
+                url: '{{ route('api.notifications.mark-all-read') }}',
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -103,7 +123,7 @@
             const date = new Date(dateString);
             const now = new Date();
             const seconds = Math.floor((now - date) / 1000);
-            
+
             if (seconds < 60) return 'Just now';
             if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
             if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
@@ -127,10 +147,10 @@
 
         $(document).ajaxError(function(event, xhr, settings, thrownError) {
             $('#globalLoadingOverlay').fadeOut(200);
-            
+
             let errorMessage = 'An error occurred while processing your request.';
             let errorTitle = 'Error';
-            
+
             if (xhr.status === 422) {
                 // Validation errors
                 errorTitle = 'Validation Error';
@@ -158,7 +178,7 @@
             } else if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMessage = xhr.responseJSON.message;
             }
-            
+
             Swal.fire({
                 icon: 'error',
                 title: errorTitle,
@@ -186,11 +206,11 @@
             e.preventDefault();
             const $form = $(this);
             const $submitBtn = $form.find('button[type="submit"], input[type="submit"]');
-            
+
             if ($submitBtn.length) {
                 showButtonLoading($submitBtn[0]);
             }
-            
+
             $.ajax({
                 url: $form.attr('action'),
                 method: $form.attr('method') || 'POST',
@@ -224,7 +244,7 @@
         });
 
         // Initialize Bootstrap tooltips
-        $(function () {
+        $(function() {
             $('[data-toggle="tooltip"]').tooltip();
             $('[data-toggle="popover"]').popover();
         });
