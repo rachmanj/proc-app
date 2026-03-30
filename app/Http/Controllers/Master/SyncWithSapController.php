@@ -53,13 +53,11 @@ class SyncWithSapController extends Controller
             ]);
         }
 
-        $status = str_contains($result['message'], 'No data found') ? 200 : 500;
-
         return response()->json([
             'success' => false,
             'message' => $result['message'],
             'sync_log' => $result['sync_log'],
-        ], $status);
+        ], 500);
     }
 
     public function syncPo(Request $request)
@@ -82,13 +80,11 @@ class SyncWithSapController extends Controller
             ]);
         }
 
-        $status = str_contains($result['message'], 'No data found') ? 200 : 500;
-
         return response()->json([
             'success' => false,
             'message' => $result['message'],
             'sync_log' => $result['sync_log'],
-        ], $status);
+        ], 500);
     }
 
     public function truncatePrTemp()

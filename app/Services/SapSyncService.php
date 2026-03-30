@@ -37,14 +37,22 @@ class SapSyncService
 
             if (empty($results)) {
                 $syncLog->update([
-                    'sync_status' => 'failed',
-                    'error_message' => 'No data found for the selected date range',
+                    'sync_status' => 'success',
+                    'records_synced' => 0,
+                    'records_created' => 0,
+                    'records_skipped' => 0,
+                    'convert_status' => 'skipped',
+                    'error_message' => null,
+                ]);
+                Log::info('PR sync: no rows from SAP for date range', [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                 ]);
 
                 return [
-                    'success' => false,
-                    'message' => 'No data found for the selected date range',
-                    'sync_log' => $syncLog,
+                    'success' => true,
+                    'message' => 'No data found for the selected date range.',
+                    'sync_log' => $syncLog->fresh(),
                 ];
             }
 
@@ -128,14 +136,22 @@ class SapSyncService
 
             if (empty($results)) {
                 $syncLog->update([
-                    'sync_status' => 'failed',
-                    'error_message' => 'No data found for the selected date range',
+                    'sync_status' => 'success',
+                    'records_synced' => 0,
+                    'records_created' => 0,
+                    'records_skipped' => 0,
+                    'convert_status' => 'skipped',
+                    'error_message' => null,
+                ]);
+                Log::info('PO sync: no rows from SAP for date range', [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                 ]);
 
                 return [
-                    'success' => false,
-                    'message' => 'No data found for the selected date range',
-                    'sync_log' => $syncLog,
+                    'success' => true,
+                    'message' => 'No data found for the selected date range.',
+                    'sync_log' => $syncLog->fresh(),
                 ];
             }
 
